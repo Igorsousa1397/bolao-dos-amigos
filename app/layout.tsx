@@ -11,6 +11,22 @@ const dmSans = DM_Sans({
 export const metadata: Metadata = {
   title: 'Bolão Copa 2026',
   description: 'Faça seus palpites para a Copa do Mundo 2026',
+  openGraph: {
+    title: 'Bolão Copa 2026',
+    description: 'Faça seus palpites para a Copa do Mundo 2026',
+    images: ['/copa.jpg'],
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Bolão Copa 2026',
+    description: 'Faça seus palpites para a Copa do Mundo 2026',
+    images: ['/copa.jpg'],
+  },
+  icons: {
+    icon: '/copa.jpg',
+    apple: '/copa.jpg',
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
