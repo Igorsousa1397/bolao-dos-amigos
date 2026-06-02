@@ -97,7 +97,7 @@ export default function AdminPage() {
       .from('pagamentos')
       .select('id, valor, status, pago_em, profiles(nome, email)')
       .order('created_at', { ascending: false })
-    setPagamentos(data || [])
+    setPagamentos((data || []) as any)
   }
 
   useEffect(() => {
