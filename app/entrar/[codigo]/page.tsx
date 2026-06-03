@@ -16,7 +16,6 @@ export default function EntrarPage() {
 
   useEffect(() => {
     async function load() {
-      // Busca o bolão primeiro, independente de estar logado
       const { data: bolaoData } = await supabase
         .from('boloes')
         .select('id, nome, valor_inscricao, codigo_convite')
@@ -34,7 +33,6 @@ export default function EntrarPage() {
         return
       }
 
-      // Verifica se já é membro
       const { data: membro } = await supabase
         .from('bolao_membros')
         .select('id')
@@ -44,7 +42,19 @@ export default function EntrarPage() {
 
       if (membro) { setStatus('ja_membro'); return }
 
-      setStatus('encontrado')
+      // Usuário logado e não é membro — entra automaticamente
+      setEntrando(true)
+      const { error } = await supabase.from('bolao_membros').insert({
+        bolao_id: bolaoData.id, user_id: user.id,
+      })
+      if (error) { setEntrando(false); setStatus('encontrado'); return }
+
+      await supabase.from('profiles').update({
+        bolao_id: bolaoData.id,
+        onboarding_completo: true,
+      }).eq('id', user.id)
+
+      router.push('/palpites')
     }
     load()
   }, [codigo])
@@ -134,14 +144,7 @@ export default function EntrarPage() {
               </p>
             </div>
 
-            <button onClick={async () => {
-              const { data: { user } } = await supabase.auth.getUser()
-              if (!user) {
-                router.push(`/login?convite=${codigo}`)
-              } else {
-                entrar()
-              }
-            }} disabled={entrando}
+            <button onClick={() => entrar()} disabled={entrando}
               style={{ width: '100%', background: '#1a6b3c', color: 'white', fontWeight: 700, padding: '18px', borderRadius: '16px', fontSize: '16px', border: 'none', cursor: 'pointer', opacity: entrando ? 0.7 : 1 }}>
               {entrando ? 'Entrando...' : 'Entrar no bolão →'}
             </button>
