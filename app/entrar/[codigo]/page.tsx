@@ -16,6 +16,10 @@ export default function EntrarPage() {
 
   useEffect(() => {
     async function load() {
+      // Aguarda a sessão ser estabelecida
+      const { data: { session } } = await supabase.auth.getSession()
+      const user = session?.user || null
+
       const { data: bolaoData } = await supabase
         .from('boloes')
         .select('id, nome, valor_inscricao, codigo_convite')
@@ -25,8 +29,6 @@ export default function EntrarPage() {
 
       if (!bolaoData) { setStatus('erro'); return }
       setBolao(bolaoData)
-
-      const { data: { user } } = await supabase.auth.getUser()
 
       if (!user) {
         setStatus('encontrado')
