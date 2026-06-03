@@ -70,6 +70,7 @@ export async function POST(request: Request) {
   })
 
   const preference = await mpResponse.json()
+  console.log('MP response:', JSON.stringify(preference))
 
   if (!preference.id) {
     return NextResponse.json({ error: 'Erro ao criar preferência' }, { status: 500 })
