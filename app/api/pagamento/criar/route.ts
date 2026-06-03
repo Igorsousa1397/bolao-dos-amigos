@@ -53,7 +53,6 @@ export async function POST(request: Request) {
           { id: 'debit_card' },
           { id: 'ticket' },
         ],
-        default_payment_method_id: 'pix',
       },
       payer: {
         email: profile?.email || user.email,
