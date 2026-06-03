@@ -116,8 +116,7 @@ export default function RegrasPage() {
             </div>
             <h2 className="font-semibold text-gray-800">Prazo dos palpites</h2>
           </div>
-          <p className="text-sm text-gray-500 leading-relaxed">Os palpites fecham <strong className="text-gray-800">1 hora antes</strong> do início de cada jogo. Após esse horário não é possível inserir ou alterar palpites.</p>
-        </div>
+          <p className="text-sm text-gray-500 leading-relaxed">Os palpites fecham <strong className="text-gray-800">24 horas antes</strong> do início de cada jogo. Após esse horário não é possível inserir ou alterar palpites.</p>        </div>
 
         {/* Premiação */}
         <div className="bg-white rounded-2xl border border-gray-100 p-5 mb-4">
