@@ -12,6 +12,7 @@ function LoginForm() {
   const [senha, setSenha] = useState('')
   const [erro, setErro] = useState('')
   const [carregando, setCarregando] = useState(false)
+  const [mostrarSenha, setMostrarSenha] = useState(false)
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
@@ -72,17 +73,23 @@ function LoginForm() {
             <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.2)' }} />
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="E-mail" required
-              style={{ width: '100%', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: 'white', borderRadius: '16px', padding: '14px 16px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }} />
-            <input type="password" value={senha} onChange={e => setSenha(e.target.value)} placeholder="Senha" required
-              style={{ width: '100%', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: 'white', borderRadius: '16px', padding: '14px 16px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }} />
-            {erro && <p style={{ color: '#f87171', fontSize: '13px', textAlign: 'center' }}>{erro}</p>}
-            <button type="button" onClick={handleLogin} disabled={carregando}
-              style={{ width: '100%', background: '#1a6b3c', color: 'white', fontWeight: 600, padding: '14px', borderRadius: '16px', fontSize: '14px', border: 'none', cursor: 'pointer', marginTop: '4px', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }}>
-              {carregando ? 'Entrando...' : 'Entrar'}
+         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="E-mail" required
+            style={{ width: '100%', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: 'white', borderRadius: '16px', padding: '14px 16px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }} />
+          <div style={{ position: 'relative' }}>
+            <input type={mostrarSenha ? 'text' : 'password'} value={senha} onChange={e => setSenha(e.target.value)} placeholder="Senha" required
+              style={{ width: '100%', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: 'white', borderRadius: '16px', padding: '14px 48px 14px 16px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }} />
+            <button type="button" onClick={() => setMostrarSenha(!mostrarSenha)}
+              style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.5)', fontSize: '12px', padding: 0 }}>
+              {mostrarSenha ? 'ocultar' : 'ver'}
             </button>
           </div>
+          {erro && <p style={{ color: '#f87171', fontSize: '13px', textAlign: 'center' }}>{erro}</p>}
+          <button type="button" onClick={handleLogin} disabled={carregando}
+            style={{ width: '100%', background: '#1a6b3c', color: 'white', fontWeight: 600, padding: '14px', borderRadius: '16px', fontSize: '14px', border: 'none', cursor: 'pointer', marginTop: '4px', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }}>
+            {carregando ? 'Entrando...' : 'Entrar'}
+          </button>
+        </div>
 
           <p style={{ textAlign: 'center', fontSize: '13px', color: 'rgba(255,255,255,0.4)', marginTop: '20px' }}>
             Não tem conta?{' '}
