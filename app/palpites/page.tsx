@@ -46,10 +46,10 @@ const BANDEIRAS: Record<string, string> = {
   NOR:'🇳🇴', RDC:'🇨🇩', GHA:'🇬🇭', UZB:'🇺🇿', SCO:'🏴󠁧󠁢󠁳󠁣󠁴󠁿', HTI:'🇭🇹',
 }
 
-function GrupoData({ data, jogos, userId, pagou, onSalvo }: {
-  data: string; jogos: Jogo[]; userId: string; pagou: boolean
+function GrupoData({ data, jogos, userId, pagou, onSalvo, habilitarExtra }: {
+  data: string; jogos: Jogo[]; userId: string; pagou: boolean; habilitarExtra: boolean
   onSalvo: (id: string, casa: number, fora: number) => void
-}) {
+}){
   const [aberto, setAberto] = useState(true)
   const temPendente = jogos.some(j => j.palpite_aberto && pagou && !j.palpite)
 
@@ -69,14 +69,14 @@ function GrupoData({ data, jogos, userId, pagou, onSalvo }: {
       </button>
 
       {aberto && jogos.map(j => (
-        <JogoCard key={j.id} jogo={j} userId={userId} pagou={pagou} onSalvo={onSalvo} />
+        <JogoCard key={j.id} jogo={j} userId={userId!} pagou={pagou} onSalvo={onSalvo} habilitarExtra={habilitarExtra} />
       ))}
     </div>
   )
 }
 
-function JogoCard({ jogo, userId, pagou, onSalvo }: {
-  jogo: Jogo; userId: string; pagou: boolean
+function JogoCard({ jogo, userId, pagou, onSalvo, habilitarExtra }: {
+  jogo: Jogo; userId: string; pagou: boolean; habilitarExtra: boolean
   onSalvo: (id: string, casa: number, fora: number) => void
 }) {
   const supabase = createClient()
@@ -314,12 +314,12 @@ function JogoCard({ jogo, userId, pagou, onSalvo }: {
         </div>
       )}
 
-      <PalpiteExtra
+      {habilitarExtra && <PalpiteExtra
         jogoId={jogo.id}
         extras={[]}
         palpiteAberto={jogo.palpite_aberto && pagou}
         onPago={() => {}}
-      />
+      />}
     </div>
   )
 }
@@ -334,16 +334,32 @@ export default function PalpitesPage() {
   const [pagou, setPagou] = useState(false)
   const [carregando, setCarregando] = useState(true)
   const [dropdownAberto, setDropdownAberto] = useState(false)
+  const [habilitarExtra, setHabilitarExtra] = useState(true)
+  const [habilitarOuro, setHabilitarOuro] = useState(true)
 
   useEffect(() => {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
       setUserId(user.id)
-      const [{ data: fases }, { data: pag }] = await Promise.all([
+      const [{ data: fases }, { data: pag }, { data: profileData }] = await Promise.all([
         supabase.from('fases').select('fase').eq('liberada', true),
         supabase.from('pagamentos').select('status').eq('user_id', user.id).maybeSingle(),
+        supabase.from('profiles').select('bolao_id').eq('id', user.id).single(),
       ])
+
+      let bolaoConfig = { habilitar_palpite_extra: true, habilitar_palpite_ouro: true }
+      if (profileData?.bolao_id) {
+        const { data: bolao } = await supabase
+          .from('boloes')
+          .select('habilitar_palpite_extra, habilitar_palpite_ouro')
+          .eq('id', profileData.bolao_id)
+          .single()
+        if (bolao) bolaoConfig = bolao
+      }
+
+      setHabilitarExtra(bolaoConfig.habilitar_palpite_extra)
+      setHabilitarOuro(bolaoConfig.habilitar_palpite_ouro)
       setFasesLiberadas((fases || []).map((f: any) => f.fase))
       setPagou(pag?.status === 'aprovado')
       setCarregando(false)
@@ -417,7 +433,7 @@ export default function PalpitesPage() {
 
       {pagou && userId && (
         <div className="mt-4">
-          <PalpiteOuro userId={userId} pagou={pagou} />
+          {habilitarOuro && <PalpiteOuro userId={userId} pagou={pagou} />}
         </div>
       )}
 
@@ -478,7 +494,7 @@ export default function PalpitesPage() {
           }, {} as Record<string, Jogo[]>)
 
           return Object.entries(grupos).map(([data, jogosData]) => (
-            <GrupoData key={data} data={data} jogos={jogosData} userId={userId!} pagou={pagou} onSalvo={onSalvo} />
+            <GrupoData key={data} data={data} jogos={jogosData} userId={userId!} pagou={pagou} onSalvo={onSalvo} habilitarExtra={habilitarExtra} />
           ))
         })()}
       </div>

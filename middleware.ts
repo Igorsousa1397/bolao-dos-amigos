@@ -36,8 +36,23 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {
-    return NextResponse.redirect(new URL('/login', request.url))
+  return NextResponse.redirect(new URL('/login', request.url))
   }
+
+  const isOnboarding = request.nextUrl.pathname.startsWith('/onboarding')
+  const isEntrar = request.nextUrl.pathname.startsWith('/entrar')
+
+  if (!isOnboarding && !isEntrar) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('onboarding_completo')
+      .eq('id', user.id)
+      .single()
+
+    if (!profile?.onboarding_completo) {
+      return NextResponse.redirect(new URL('/onboarding', request.url))
+    }
+}
 
   return supabaseResponse
 }
