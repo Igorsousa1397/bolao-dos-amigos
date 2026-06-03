@@ -70,8 +70,7 @@ export default function EntrarPage() {
     const { error } = await supabase.from('bolao_membros').insert({
       bolao_id: bolao.id, user_id: user.id,
     })
-
-    if (error) { setEntrando(false); return }
+    if (error && error.code !== '23505') { setEntrando(false); setStatus('encontrado'); return }
 
     await supabase.from('profiles').update({
       bolao_id: bolao.id,
