@@ -75,9 +75,7 @@ export default function RegrasPage() {
           </div>
         </div>
 
-    {habilitarExtra && (
-      <div className="bg-white rounded-2xl border border-gray-100 p-5 mb-4">
-        {/* Palpites extras */}
+        {habilitarExtra && (
         <div className="bg-white rounded-2xl border border-gray-100 p-5 mb-4">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-2xl bg-blue-50 flex items-center justify-center">
@@ -105,7 +103,6 @@ export default function RegrasPage() {
             </div>
           </div>
         </div>
-      </div>
       )}
 
         {/* Prazo */}
@@ -116,7 +113,8 @@ export default function RegrasPage() {
             </div>
             <h2 className="font-semibold text-gray-800">Prazo dos palpites</h2>
           </div>
-          <p className="text-sm text-gray-500 leading-relaxed">Os palpites fecham <strong className="text-gray-800">24 horas antes</strong> do início de cada jogo. Após esse horário não é possível inserir ou alterar palpites.</p>        </div>
+          <p className="text-sm text-gray-500 leading-relaxed">Os palpites fecham <strong className="text-gray-800">24 horas antes</strong> do início de cada jogo. Após esse horário não é possível inserir ou alterar palpites.</p>
+        </div>
 
         {/* Premiação */}
         <div className="bg-white rounded-2xl border border-gray-100 p-5 mb-4">
@@ -149,9 +147,7 @@ export default function RegrasPage() {
           )}
         </div>
 
-{habilitarOuro && (
-  <div className="bg-white rounded-2xl border border-gray-100 p-5 mb-4">
-        {/* Palpite de Ouro */}
+      {habilitarOuro && (
         <div className="bg-white rounded-2xl border border-gray-100 p-5 mb-4">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-2xl bg-yellow-50 flex items-center justify-center">
@@ -176,8 +172,7 @@ export default function RegrasPage() {
             ⚠️ Prazo: deve ser feito antes do 1º jogo. Após isso não é possível preencher.
           </p>
         </div>
-      </div>
-    )}
+      )}
 
         {/* Desempate */}
         <div className="bg-white rounded-2xl border border-gray-100 p-5 mb-4">
