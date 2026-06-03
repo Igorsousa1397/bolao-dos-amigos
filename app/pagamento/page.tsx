@@ -13,10 +13,20 @@ export default function PagamentoPage() {
   const [pagoEm, setPagoEm] = useState<string | null>(null)
   const [processando, setProcessando] = useState(false)
   const [erro, setErro] = useState('')
+  const [valorInscricao, setValorInscricao] = useState(100)
 
   useEffect(() => {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+      const { data: profile } = await supabase
+        .from('profiles').select('bolao_id').eq('id', user.id).single()
+      if (profile?.bolao_id) {
+        const { data: bolao } = await supabase
+          .from('boloes').select('valor_inscricao').eq('id', profile.bolao_id).single()
+        if (bolao) setValorInscricao(bolao.valor_inscricao)
+      }
+    }
       if (!user) return
 
       const { data } = await supabase
@@ -97,7 +107,7 @@ export default function PagamentoPage() {
               <div className="flex flex-col gap-3">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">Inscrição</span>
-                  <span className="font-semibold">R$ 100,00</span>
+                  <span className="font-semibold">R$ {valorInscricao.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">Acesso</span>
@@ -139,7 +149,7 @@ export default function PagamentoPage() {
                     <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" fill="white" opacity="0.3"/>
                     <path d="M8 12l2.5 2.5L16 9" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
-                  Pagar R$ 100 com Mercado Pago
+                  Pagar Pagar R$ {valorInscricao.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} com Mercado Pago
                 </>
               )}
             </button>

@@ -1,19 +1,41 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
 import { ArrowLeft, Trophy, Target, X, Plus, RefreshCw } from 'lucide-react'
 
 export default function RegrasPage() {
   const router = useRouter()
+  const supabase = createClient()
+  const [habilitarOuro, setHabilitarOuro] = useState(true)
+  const [habilitarExtra, setHabilitarExtra] = useState(true)
+  const [habilitarAzarao, setHabilitarAzarao] = useState(true)
+
+  useEffect(() => {
+    async function load() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      const { data: profile } = await supabase
+        .from('profiles').select('bolao_id').eq('id', user.id).single()
+      if (!profile?.bolao_id) return
+      const { data: bolao } = await supabase
+        .from('boloes')
+        .select('habilitar_palpite_ouro, habilitar_palpite_extra, habilitar_azarao')
+        .eq('id', profile.bolao_id).single()
+      if (bolao) {
+        setHabilitarOuro(bolao.habilitar_palpite_ouro ?? true)
+        setHabilitarExtra(bolao.habilitar_palpite_extra ?? true)
+        setHabilitarAzarao(bolao.habilitar_azarao ?? true)
+      }
+    }
+    load()
+  }, [])
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-[#1a6b3c] pt-14 pb-5 px-5">
-        <button onClick={() => router.push('/palpites')} className="flex items-center gap-2 text-white/70 text-sm mb-4">
-          <ArrowLeft size={18} />
-          Voltar
-        </button>
+      <div className="bg-[#1a6b3c] pt-10 pb-5 px-5 text-center">
         <h1 className="text-white text-2xl font-semibold tracking-tight">Regras do Bolão</h1>
         <p className="text-green-300 text-sm mt-0.5">Copa do Mundo 2026</p>
       </div>
@@ -53,6 +75,8 @@ export default function RegrasPage() {
           </div>
         </div>
 
+    {habilitarExtra && (
+      <div className="bg-white rounded-2xl border border-gray-100 p-5 mb-4">
         {/* Palpites extras */}
         <div className="bg-white rounded-2xl border border-gray-100 p-5 mb-4">
           <div className="flex items-center gap-3 mb-4">
@@ -81,6 +105,8 @@ export default function RegrasPage() {
             </div>
           </div>
         </div>
+      </div>
+      )}
 
         {/* Prazo */}
         <div className="bg-white rounded-2xl border border-gray-100 p-5 mb-4">
@@ -116,12 +142,16 @@ export default function RegrasPage() {
               <span className="text-sm font-bold text-gray-600">15% do total</span>
             </div>
           </div>
-          <div className="flex items-center justify-between py-2.5 px-3 bg-orange-50 rounded-xl mt-2">
-            <span className="text-sm font-medium text-gray-700">🃏 Último lugar (Azarão)</span>
-            <span className="text-sm font-bold text-orange-600">R$ 50 fixo</span>
-          </div>
+          {habilitarAzarao && (
+            <div className="flex items-center justify-between py-2.5 px-3 bg-orange-50 rounded-xl mt-2">
+              <span className="text-sm font-medium text-gray-700">🃏 Último lugar (Azarão)</span>
+              <span className="text-sm font-bold text-orange-600">R$ 50 fixo</span>
+            </div>
+          )}
         </div>
 
+{habilitarOuro && (
+  <div className="bg-white rounded-2xl border border-gray-100 p-5 mb-4">
         {/* Palpite de Ouro */}
         <div className="bg-white rounded-2xl border border-gray-100 p-5 mb-4">
           <div className="flex items-center gap-3 mb-4">
@@ -147,6 +177,8 @@ export default function RegrasPage() {
             ⚠️ Prazo: deve ser feito antes do 1º jogo. Após isso não é possível preencher.
           </p>
         </div>
+      </div>
+    )}
 
         {/* Desempate */}
         <div className="bg-white rounded-2xl border border-gray-100 p-5">

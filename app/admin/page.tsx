@@ -127,6 +127,7 @@ export default function AdminPage() {
   const [valorBolao, setValorBolao] = useState('')
   const [salvandoBolao, setSalvandoBolao] = useState(false)
   const [copiado, setCopiado] = useState(false)
+  const [toast, setToast] = useState('')
   const [fases, setFases] = useState<Fase[]>([])
   const [jogos, setJogos] = useState<Jogo[]>([])
   const [pagamentos, setPagamentos] = useState<Pagamento[]>([])
@@ -138,6 +139,9 @@ export default function AdminPage() {
   const [habilitarAzarao, setHabilitarAzarao] = useState(true)
   const [habilitarOuro, setHabilitarOuro] = useState(true)
   const [habilitarExtra, setHabilitarExtra] = useState(true)
+  const [valorExtra2, setValorExtra2] = useState('10')
+  const [valorExtra3, setValorExtra3] = useState('15')
+  const [valorExtra4, setValorExtra4] = useState('20')
 
   useEffect(() => {
     async function verificarAdmin() {
@@ -188,6 +192,9 @@ export default function AdminPage() {
       setHabilitarAzarao(data.habilitar_azarao ?? true)
       setHabilitarOuro(data.habilitar_palpite_ouro ?? true)
       setHabilitarExtra(data.habilitar_palpite_extra ?? true)
+      setValorExtra2((data.valor_palpite_extra_2 ?? 10).toString())
+      setValorExtra3((data.valor_palpite_extra_3 ?? 15).toString())
+      setValorExtra4((data.valor_palpite_extra_4 ?? 20).toString())
     }
   }
 
@@ -230,8 +237,14 @@ export default function AdminPage() {
       habilitar_azarao: habilitarAzarao,
       habilitar_palpite_ouro: habilitarOuro,
       habilitar_palpite_extra: habilitarExtra,
+      valor_palpite_extra_2: Number(valorExtra2),
+      valor_palpite_extra_3: Number(valorExtra3),
+      valor_palpite_extra_4: Number(valorExtra4),
     }).eq('id', bolao.id)
+    await loadBolao() // recarrega para atualizar o bolao e desabilitar o botão
     setSalvandoBolao(false)
+    setToast('Salvo com sucesso!')
+    setTimeout(() => setToast(''), 3000)
   }
 
   function copiarLink() {
@@ -258,17 +271,13 @@ export default function AdminPage() {
   return (
     <div>
       <div className="bg-[#1a6b3c] pt-12 pb-0 px-4">
-        <div className="flex items-center justify-between mb-4">
+        <div className="text-center mb-4">
           <h1 className="text-white text-xl font-semibold">Admin</h1>
-          <div className="flex items-center gap-1.5 bg-white/20 px-3 py-1 rounded-full">
-            <Shield size={12} className="text-white" />
-            <span className="text-xs text-white font-medium">Admin</span>
-          </div>
         </div>
-        <div className="flex overflow-x-auto">
+        <div className="flex">
           {(['fases', 'jogos', 'pagamentos', 'bolao'] as const).map(a => (
             <button key={a} onClick={() => setAba(a)}
-              className={`flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors text-center ${
                 aba === a ? 'border-white text-white' : 'border-transparent text-white/50'
               }`}>
               {a === 'fases' ? 'Fases' : a === 'jogos' ? 'Jogos' : a === 'pagamentos' ? 'Pagamentos' : 'Bolão'}
@@ -444,6 +453,36 @@ export default function AdminPage() {
                     <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${habilitarExtra ? 'left-6' : 'left-1'}`} />
                   </button>
                 </div>
+
+                {habilitarExtra && (
+                  <div className="bg-gray-50 rounded-xl p-3 mb-2 flex flex-col gap-2">
+                    <p className="text-xs text-gray-500 font-medium mb-1">Valores dos palpites extras</p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-gray-600">2º palpite</span>
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs text-gray-400">R$</span>
+                        <input type="number" value={valorExtra2} onChange={e => setValorExtra2(e.target.value)}
+                          className="w-16 text-center text-sm font-semibold border border-gray-200 rounded-lg px-2 py-1 outline-none focus:border-green-500 text-gray-800" />
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-gray-600">3º palpite</span>
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs text-gray-400">R$</span>
+                        <input type="number" value={valorExtra3} onChange={e => setValorExtra3(e.target.value)}
+                          className="w-16 text-center text-sm font-semibold border border-gray-200 rounded-lg px-2 py-1 outline-none focus:border-green-500 text-gray-800" />
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-gray-600">4º palpite</span>
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs text-gray-400">R$</span>
+                        <input type="number" value={valorExtra4} onChange={e => setValorExtra4(e.target.value)}
+                          className="w-16 text-center text-sm font-semibold border border-gray-200 rounded-lg px-2 py-1 outline-none focus:border-green-500 text-gray-800" />
+                      </div>
+                    </div>
+                  </div>
+                )}
                 <div className="flex items-center justify-between py-3">
                   <div>
                     <p className="text-sm font-medium text-gray-800">Azarão</p>
@@ -455,7 +494,16 @@ export default function AdminPage() {
                   </button>
                 </div>
               </div>
-              <button onClick={salvarBolao} disabled={salvandoBolao}
+              <button onClick={salvarBolao}
+                disabled={salvandoBolao || (
+                  bolao &&
+                  habilitarOuro === (bolao.habilitar_palpite_ouro ?? true) &&
+                  habilitarExtra === (bolao.habilitar_palpite_extra ?? true) &&
+                  habilitarAzarao === (bolao.habilitar_azarao ?? true) &&
+                  valorExtra2 === (bolao.valor_palpite_extra_2 ?? 10).toString() &&
+                  valorExtra3 === (bolao.valor_palpite_extra_3 ?? 15).toString() &&
+                  valorExtra4 === (bolao.valor_palpite_extra_4 ?? 20).toString()
+                )}
                 className="w-full mt-4 bg-[#1a6b3c] text-white font-semibold py-3 rounded-xl text-sm disabled:opacity-40 active:scale-95 transition-transform">
                 {salvandoBolao ? 'Salvando...' : 'Salvar regras'}
               </button>
@@ -463,6 +511,11 @@ export default function AdminPage() {
           </div>
         )}
       </div>
+      {toast && (
+        <div className="fixed bottom-24 left-4 right-4 bg-gray-900 text-white text-sm font-medium px-4 py-3 rounded-2xl text-center z-50 shadow-lg">
+          ✓ {toast}
+        </div>
+      )}
     </div>
   )
 }

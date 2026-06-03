@@ -46,8 +46,9 @@ const BANDEIRAS: Record<string, string> = {
   NOR:'🇳🇴', RDC:'🇨🇩', GHA:'🇬🇭', UZB:'🇺🇿', SCO:'🏴󠁧󠁢󠁳󠁣󠁴󠁿', HTI:'🇭🇹',
 }
 
-function GrupoData({ data, jogos, userId, pagou, onSalvo, habilitarExtra }: {
+function GrupoData({ data, jogos, userId, pagou, onSalvo, habilitarExtra, valorExtra2, valorExtra3, valorExtra4 }: {
   data: string; jogos: Jogo[]; userId: string; pagou: boolean; habilitarExtra: boolean
+  valorExtra2: number; valorExtra3: number; valorExtra4: number
   onSalvo: (id: string, casa: number, fora: number) => void
 }){
   const [aberto, setAberto] = useState(true)
@@ -69,14 +70,16 @@ function GrupoData({ data, jogos, userId, pagou, onSalvo, habilitarExtra }: {
       </button>
 
       {aberto && jogos.map(j => (
-        <JogoCard key={j.id} jogo={j} userId={userId!} pagou={pagou} onSalvo={onSalvo} habilitarExtra={habilitarExtra} />
+        <JogoCard key={j.id} jogo={j} userId={userId} pagou={pagou} onSalvo={onSalvo} 
+          habilitarExtra={habilitarExtra} valorExtra2={valorExtra2} valorExtra3={valorExtra3} valorExtra4={valorExtra4} />
       ))}
     </div>
   )
 }
 
-function JogoCard({ jogo, userId, pagou, onSalvo, habilitarExtra }: {
+function JogoCard({ jogo, userId, pagou, onSalvo, habilitarExtra, valorExtra2, valorExtra3, valorExtra4 }: {
   jogo: Jogo; userId: string; pagou: boolean; habilitarExtra: boolean
+  valorExtra2: number; valorExtra3: number; valorExtra4: number
   onSalvo: (id: string, casa: number, fora: number) => void
 }) {
   const supabase = createClient()
@@ -319,6 +322,9 @@ function JogoCard({ jogo, userId, pagou, onSalvo, habilitarExtra }: {
         extras={[]}
         palpiteAberto={jogo.palpite_aberto && pagou}
         onPago={() => {}}
+        valorExtra2={valorExtra2}
+        valorExtra3={valorExtra3}
+        valorExtra4={valorExtra4}
       />}
     </div>
   )
@@ -335,7 +341,11 @@ export default function PalpitesPage() {
   const [carregando, setCarregando] = useState(true)
   const [dropdownAberto, setDropdownAberto] = useState(false)
   const [habilitarExtra, setHabilitarExtra] = useState(true)
+  const [valorExtra2, setValorExtra2] = useState(10)
+  const [valorExtra3, setValorExtra3] = useState(15)
+  const [valorExtra4, setValorExtra4] = useState(20)
   const [habilitarOuro, setHabilitarOuro] = useState(true)
+  
 
   useEffect(() => {
     async function load() {
@@ -348,17 +358,20 @@ export default function PalpitesPage() {
         supabase.from('profiles').select('bolao_id').eq('id', user.id).single(),
       ])
 
-      let bolaoConfig = { habilitar_palpite_extra: true, habilitar_palpite_ouro: true }
+      let bolaoConfig: any = { habilitar_palpite_extra: true, habilitar_palpite_ouro: true, valor_palpite_extra_2: 10, valor_palpite_extra_3: 15, valor_palpite_extra_4: 20 }
       if (profileData?.bolao_id) {
         const { data: bolao } = await supabase
-          .from('boloes')
-          .select('habilitar_palpite_extra, habilitar_palpite_ouro')
-          .eq('id', profileData.bolao_id)
-          .single()
+            .from('boloes')
+            .select('habilitar_palpite_extra, habilitar_palpite_ouro, valor_palpite_extra_2, valor_palpite_extra_3, valor_palpite_extra_4')
+            .eq('id', profileData.bolao_id)
+            .single()
         if (bolao) bolaoConfig = bolao
       }
 
       setHabilitarExtra(bolaoConfig.habilitar_palpite_extra)
+      setValorExtra2(bolaoConfig.valor_palpite_extra_2 ?? 10)
+      setValorExtra3(bolaoConfig.valor_palpite_extra_3 ?? 15)
+      setValorExtra4(bolaoConfig.valor_palpite_extra_4 ?? 20)
       setHabilitarOuro(bolaoConfig.habilitar_palpite_ouro)
       setFasesLiberadas((fases || []).map((f: any) => f.fase))
       setPagou(pag?.status === 'aprovado')
@@ -494,7 +507,8 @@ export default function PalpitesPage() {
           }, {} as Record<string, Jogo[]>)
 
           return Object.entries(grupos).map(([data, jogosData]) => (
-            <GrupoData key={data} data={data} jogos={jogosData} userId={userId!} pagou={pagou} onSalvo={onSalvo} habilitarExtra={habilitarExtra} />
+            <GrupoData key={data} data={data} jogos={jogosData} userId={userId!} pagou={pagou} onSalvo={onSalvo} 
+              habilitarExtra={habilitarExtra} valorExtra2={valorExtra2} valorExtra3={valorExtra3} valorExtra4={valorExtra4} />
           ))
         })()}
       </div>
