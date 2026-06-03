@@ -158,7 +158,7 @@ export default function PagamentoPage() {
             </button>
 
             <p className="text-center text-xs text-gray-400 mt-3">
-              Pagamento seguro via Mercado Pago · PIX, cartão ou boleto
+              Pagamento seguro via Mercado Pago · PIX
             </p>
           </>
         )}
