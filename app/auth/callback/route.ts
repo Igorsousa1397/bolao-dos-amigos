@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
@@ -14,11 +15,8 @@ export async function GET(request: Request) {
     const supabase = await createClient()
     const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
     if (!exchangeError) {
-      const convite = request.headers.get('cookie')
-        ?.split(';')
-        .find(c => c.trim().startsWith('convite_codigo='))
-        ?.split('=')[1]
-        ?.trim()
+      const cookieStore = await cookies()
+      const convite = cookieStore.get('convite_codigo')?.value
 
       if (convite) {
         const response = NextResponse.redirect(`${origin}/entrar/${convite}`)
