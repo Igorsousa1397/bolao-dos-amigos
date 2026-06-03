@@ -181,12 +181,30 @@ export default function AdminPage() {
       .from('boloes').select('id').eq('admin_id', user.id).single()
     if (!bolaoData) return
 
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('bolao_membros')
-      .select('user_id, joined_at, profiles(nome, email), pagamentos(status, pago_em)')
+      .select('user_id, joined_at, profiles(nome, email)')
       .eq('bolao_id', bolaoData.id)
       .order('joined_at')
-    setPagamentos((data || []) as any)
+
+    if (error) { console.error('erro membros:', error); return }
+
+    // Busca pagamentos separadamente
+    const userIds = (data || []).map((m: any) => m.user_id)
+    const { data: pags } = await supabase
+      .from('pagamentos')
+      .select('user_id, id, status, pago_em')
+      .in('user_id', userIds)
+
+    const pagsMap: Record<string, any> = {}
+    ;(pags || []).forEach((p: any) => { pagsMap[p.user_id] = p })
+
+    const membros = (data || []).map((m: any) => ({
+      ...m,
+      pagamento: pagsMap[m.user_id] || null,
+    }))
+
+    setPagamentos(membros as any)
   }
 
   async function loadBolao() {
@@ -365,16 +383,16 @@ export default function AdminPage() {
                     <p className="text-xs text-gray-400 truncate">{p.profiles?.email}</p>
                   </div>
                   <div className="flex-shrink-0 ml-2">
-                    {p.pagamentos?.[0]?.status === 'aprovado' ? (
+                    {p.pagamento?.status === 'aprovado' ? (
                       <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-medium">Pago</span>
-                    ) : p.pagamentos?.[0]?.status === 'pendente' ? (
-                      <button onClick={() => aprovarPagamento(p.pagamentos[0].id)}
-                        disabled={salvando === p.pagamentos[0].id}
+                    ) : p.pagamento?.status === 'pendente' ? (
+                      <button onClick={() => aprovarPagamento(p.pagamento.id)}
+                        disabled={salvando === p.pagamento.id}
                         className="text-xs bg-amber-100 text-amber-700 px-3 py-1.5 rounded-full font-medium">
-                        {salvando === p.pagamentos[0].id ? '...' : 'Aprovar'}
+                        {salvando === p.pagamento.id ? '...' : 'Aprovar'}
                       </button>
                     ) : (
-                      <span className="text-xs bg-gray-100 text-gray-400 px-2 py-1 rounded-full font-medium">Pendente</span>
+                      <span className="text-xs bg-gray-100 text-gray-400 px-2 py-1 rounded-full font-medium">Sem pagamento</span>
                     )}
                   </div>
                 </div>
