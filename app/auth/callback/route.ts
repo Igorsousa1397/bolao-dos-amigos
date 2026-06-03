@@ -6,6 +6,7 @@ export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
   const error = searchParams.get('error')
+  const convite = searchParams.get('convite') || searchParams.get('state') || null
 
   if (error) {
     return NextResponse.redirect(`${origin}/login`)

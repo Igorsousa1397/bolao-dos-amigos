@@ -31,9 +31,15 @@ function LoginForm() {
     const redirectTo = conviteParam
       ? `${location.origin}/auth/callback?convite=${conviteParam}`
       : `${location.origin}/auth/callback`
+
     await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo }
+      options: { 
+        redirectTo,
+        queryParams: {
+          state: conviteParam || '',
+        }
+      }
     })
   }
 
