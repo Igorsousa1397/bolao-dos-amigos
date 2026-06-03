@@ -46,7 +46,7 @@ export async function POST(request: Request) {
         pending: `${process.env.NEXT_PUBLIC_SITE_URL}/pagamento?status=pending`,
       },
       auto_return: 'approved',
-      notification_url: `${process.env.NEXT_PUBLIC_SITE_URL}/api/pagamento/webhook`,
+      notification_url: `${process.env.NEXT_PUBLIC_SITE_URL}/api/webhook`,
       metadata: { user_id: user.id },
     }),
   })
