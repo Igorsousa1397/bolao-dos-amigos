@@ -19,9 +19,19 @@ export async function POST(request: Request) {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('nome, email')
+    .select('nome, email, bolao_id')
     .eq('id', user.id)
     .single()
+
+  let valorInscricao = 100.00
+  if (profile?.bolao_id) {
+    const { data: bolao } = await supabase
+      .from('boloes')
+      .select('valor_inscricao')
+      .eq('id', profile.bolao_id)
+      .single()
+    if (bolao) valorInscricao = bolao.valor_inscricao
+  }
 
   const mpResponse = await fetch('https://api.mercadopago.com/checkout/preferences', {
     method: 'POST',
@@ -33,9 +43,17 @@ export async function POST(request: Request) {
       items: [{
         title: 'Bolão Copa 2026 — Inscrição',
         quantity: 1,
-        unit_price: 100.00,
+        unit_price: valorInscricao,
         currency_id: 'BRL',
       }],
+      payment_methods: {
+        excluded_payment_types: [
+          { id: 'credit_card' },
+          { id: 'debit_card' },
+          { id: 'ticket' },
+        ],
+        default_payment_method_id: 'pix',
+      },
       payer: {
         email: profile?.email || user.email,
         name: profile?.nome || '',
@@ -60,7 +78,7 @@ export async function POST(request: Request) {
   await supabase.from('pagamentos').upsert({
     user_id: user.id,
     mp_preference_id: preference.id,
-    valor: 100.00,
+    valor: valorInscricao,
     status: 'pendente',
   }, { onConflict: 'user_id' })
 
