@@ -29,7 +29,6 @@ export default function CadastroPage() {
       return
     }
     router.push('/palpites')
-    router.refresh()
   }
 
   return (

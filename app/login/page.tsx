@@ -25,7 +25,6 @@ export default function LoginPage() {
     } else {
       router.push('/palpites')
     }
-    router.refresh()
   }
 
   async function handleGoogle() {
