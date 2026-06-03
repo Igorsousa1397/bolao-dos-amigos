@@ -65,12 +65,16 @@ export default function EntrarPage() {
     setEntrando(true)
     const { data: { session } } = await supabase.auth.getSession()
     const user = session?.user
-    if (!user || !bolao) { setEntrando(false); return }
+
+    if (!user) {
+      router.push(`/login?convite=${codigo}`)
+      return
+    }
 
     const { error } = await supabase.from('bolao_membros').insert({
       bolao_id: bolao.id, user_id: user.id,
     })
-    if (error && error.code !== '23505') { setEntrando(false); setStatus('encontrado'); return }
+    if (error && error.code !== '23505') { setEntrando(false); return }
 
     await supabase.from('profiles').update({
       bolao_id: bolao.id,
