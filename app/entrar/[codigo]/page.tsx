@@ -16,14 +16,7 @@ export default function EntrarPage() {
 
   useEffect(() => {
     async function load() {
-      const { data: { user } } = await supabase.auth.getUser()
-
-      if (!user) {
-        router.push(`/login?convite=${codigo}`)
-        return
-      }
-
-      // Busca o bolão pelo código
+      // Busca o bolão primeiro, independente de estar logado
       const { data: bolaoData } = await supabase
         .from('boloes')
         .select('id, nome, valor_inscricao, codigo_convite')
@@ -33,6 +26,13 @@ export default function EntrarPage() {
 
       if (!bolaoData) { setStatus('erro'); return }
       setBolao(bolaoData)
+
+      const { data: { user } } = await supabase.auth.getUser()
+
+      if (!user) {
+        setStatus('encontrado')
+        return
+      }
 
       // Verifica se já é membro
       const { data: membro } = await supabase
@@ -140,8 +140,14 @@ export default function EntrarPage() {
               </p>
             </div>
 
-            <button onClick={entrar} disabled={entrando}
-              style={{ width: '100%', background: '#1a6b3c', color: 'white', fontWeight: 700, padding: '18px', borderRadius: '16px', fontSize: '16px', border: 'none', cursor: 'pointer', opacity: entrando ? 0.7 : 1 }}>
+            <button onClick={async () => {
+              const { data: { user } } = await supabase.auth.getUser()
+              if (!user) {
+                router.push(`/login?convite=${codigo}`)
+              } else {
+                entrar()
+              }
+            }}>
               {entrando ? 'Entrando...' : 'Entrar no bolão →'}
             </button>
           </div>

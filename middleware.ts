@@ -8,6 +8,7 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/auth') ||
     pathname.startsWith('/login') ||
     pathname.startsWith('/cadastro') ||
+    pathname.startsWith('/entrar') ||
     pathname.startsWith('/_next') ||
     pathname.match(/\.(jpg|jpeg|png|gif|svg|ico|webp|woff|woff2)$/)
   ) {
