@@ -110,7 +110,7 @@ export default function PagamentoPage() {
               <div className="flex flex-col gap-3">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">Inscrição</span>
-                  <span className="font-semibold">R$ {valorInscricao.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                  <span className="font-semibold text-gray-800">R$ {valorInscricao.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">Acesso</span>
