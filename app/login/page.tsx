@@ -15,16 +15,28 @@ export default function LoginPage() {
     e.preventDefault()
     setErro('')
     setCarregando(true)
-    const { error } = await supabase.auth.signInWithPassword({ email, password: senha })
-    if (error) { setErro('E-mail ou senha incorretos'); setCarregando(false); return }
-    router.push('/palpites')
+    const { error: loginError } = await supabase.auth.signInWithPassword({ email, password: senha })
+    if (loginError) { setErro('E-mail ou senha incorretos'); setCarregando(false); return }
+
+    const codigo = localStorage.getItem('convite_codigo')
+    if (codigo) {
+      localStorage.removeItem('convite_codigo')
+      router.push(`/entrar/${codigo}`)
+    } else {
+      router.push('/palpites')
+    }
     router.refresh()
   }
 
   async function handleGoogle() {
+    const codigo = localStorage.getItem('convite_codigo')
+    const redirectTo = codigo
+      ? `${location.origin}/auth/callback?convite=${codigo}`
+      : `${location.origin}/auth/callback`
+
     await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${location.origin}/auth/callback` }
+      options: { redirectTo }
     })
   }
 

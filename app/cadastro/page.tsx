@@ -33,41 +33,39 @@ export default function CadastroPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#0f5030] flex items-center justify-center px-4">
-      <div className="w-full max-w-sm">
-        <div className="text-center mb-8">
-          <div className="text-5xl mb-3">🏆</div>
-          <h1 className="text-white text-2xl font-semibold">Bolão Copa 2026</h1>
-          <p className="text-green-300 text-sm mt-1">Crie sua conta e participe</p>
-        </div>
-        <div className="bg-white rounded-2xl p-6 shadow-xl">
-          <form onSubmit={handleCadastro} className="flex flex-col gap-4">
-            <div className="flex flex-col gap-1">
-              <label className="text-sm text-gray-600 font-medium">Nome</label>
-              <input type="text" value={nome} onChange={e => setNome(e.target.value)} placeholder="Seu nome completo" required className="border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-green-600 transition-colors" />
-            </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-sm text-gray-600 font-medium">E-mail</label>
-              <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="seu@email.com" required className="border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-green-600 transition-colors" />
-            </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-sm text-gray-600 font-medium">Senha</label>
-              <input type="password" value={senha} onChange={e => setSenha(e.target.value)} placeholder="Mínimo 6 caracteres" required className="border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-green-600 transition-colors" />
-            </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-sm text-gray-600 font-medium">Confirmar senha</label>
-              <input type="password" value={confirmar} onChange={e => setConfirmar(e.target.value)} placeholder="Repita a senha" required className="border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-green-600 transition-colors" />
-            </div>
-            {erro && <p className="text-red-500 text-sm text-center">{erro}</p>}
-            <button type="submit" disabled={carregando} className="bg-[#1a6b3c] text-white rounded-xl py-3 font-semibold text-sm mt-1 disabled:opacity-60 active:scale-95 transition-transform">
-              {carregando ? 'Criando conta...' : 'Criar conta'}
-            </button>
-          </form>
-          <p className="text-center text-sm text-gray-500 mt-4">
-            Já tem conta? <a href="/login" className="text-green-700 font-medium">Entrar</a>
-          </p>
-        </div>
+  <main className="login-bg" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.2) 40%, rgba(0,0,0,0.85) 100%)' }} />
+
+    <div style={{ position: 'relative', zIndex: 10, flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '64px 24px 24px' }}>
+      <div style={{ position: 'absolute', top: '48px', left: 0, right: 0, textAlign: 'center' }}>
+        <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px', fontWeight: 500, letterSpacing: '3px', textTransform: 'uppercase', marginBottom: '8px' }}>Copa do Mundo</p>
+        <h1 style={{ color: 'white', fontSize: '36px', fontWeight: 700, letterSpacing: '-1px' }}>Bolão</h1>
+        <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px', marginTop: '8px' }}>Crie sua conta e participe</p>
       </div>
-    </main>
-  )
+
+      <div style={{ width: '100%', maxWidth: '360px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <input type="text" value={nome} onChange={e => setNome(e.target.value)} placeholder="Nome completo" required
+          style={{ width: '100%', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: 'white', borderRadius: '16px', padding: '14px 16px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }} />
+        <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="E-mail" required
+          style={{ width: '100%', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: 'white', borderRadius: '16px', padding: '14px 16px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }} />
+        <input type="password" value={senha} onChange={e => setSenha(e.target.value)} placeholder="Senha (mínimo 6 caracteres)" required
+          style={{ width: '100%', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: 'white', borderRadius: '16px', padding: '14px 16px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }} />
+        <input type="password" value={confirmar} onChange={e => setConfirmar(e.target.value)} placeholder="Confirmar senha" required
+          style={{ width: '100%', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: 'white', borderRadius: '16px', padding: '14px 16px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }} />
+
+        {erro && <p style={{ color: '#f87171', fontSize: '13px', textAlign: 'center' }}>{erro}</p>}
+
+        <button type="button" onClick={handleCadastro} disabled={carregando}
+          style={{ width: '100%', background: '#1a6b3c', color: 'white', fontWeight: 600, padding: '14px', borderRadius: '16px', fontSize: '14px', border: 'none', cursor: 'pointer', marginTop: '4px', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }}>
+          {carregando ? 'Criando conta...' : 'Criar conta'}
+        </button>
+
+        <p style={{ textAlign: 'center', fontSize: '13px', color: 'rgba(255,255,255,0.4)', marginTop: '8px' }}>
+          Já tem conta?{' '}
+          <a href="/login" style={{ color: 'white', fontWeight: 500 }}>Entrar</a>
+        </p>
+      </div>
+    </div>
+  </main>
+)
 }

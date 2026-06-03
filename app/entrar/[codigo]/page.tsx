@@ -67,7 +67,13 @@ export default function EntrarPage() {
       onboarding_completo: true,
     }).eq('id', user.id)
 
-    router.push('/palpites')
+    const codigo = localStorage.getItem('convite_codigo')
+    if (codigo) {
+      localStorage.removeItem('convite_codigo')
+      router.push(`/entrar/${codigo}`)
+    } else {
+      router.push('/palpites')
+    }
   }
 
   return (
