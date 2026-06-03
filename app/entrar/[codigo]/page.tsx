@@ -19,8 +19,8 @@ export default function EntrarPage() {
       const { data: { user } } = await supabase.auth.getUser()
 
       if (!user) {
-        // Salva o código e redireciona para login
-        localStorage.setItem('convite_codigo', codigo)
+        // troca localStorage por cookie
+        document.cookie = `convite_codigo=${codigo}; path=/; max-age=3600`
         router.push('/login')
         return
       }
