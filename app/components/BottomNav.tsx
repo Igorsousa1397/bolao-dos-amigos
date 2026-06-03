@@ -145,7 +145,20 @@ export default function BottomNav() {
               </div>
             </div>
 
-            <Link href="/regras" onClick={() => setMenu(false)}
+            {profile?.is_admin && (
+            <Link href="/admin" onClick={() => setMenu(false)}
+              className="w-full flex items-center gap-4 py-4 border-b border-gray-50">
+              <div className="w-10 h-10 rounded-2xl bg-green-50 flex items-center justify-center">
+                <ShieldCheck size={20} className="text-green-700" strokeWidth={1.5} />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-800">Painel Admin</p>
+                <p className="text-xs text-gray-400">Gerencie fases e resultados</p>
+              </div>
+            </Link>
+          )}
+
+          <Link href="/regras" onClick={() => setMenu(false)}
             className="w-full flex items-center gap-4 py-4 border-b border-gray-50">
             <div className="w-10 h-10 rounded-2xl bg-amber-50 flex items-center justify-center">
               <BookOpen size={20} className="text-amber-600" strokeWidth={1.5} />
@@ -155,19 +168,6 @@ export default function BottomNav() {
               <p className="text-xs text-gray-400">Pontuação e premiação</p>
             </div>
           </Link>
-
-          {profile?.is_admin && (
-            <Link href="/admin" onClick={() => setMenu(false)}
-                className="w-full flex items-center gap-4 py-4 border-b border-gray-50">
-                <div className="w-10 h-10 rounded-2xl bg-green-50 flex items-center justify-center">
-                  <ShieldCheck size={20} className="text-green-700" strokeWidth={1.5} />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-800">Painel Admin</p>
-                  <p className="text-xs text-gray-400">Gerencie fases e resultados</p>
-                </div>
-              </Link>
-            )}
 
             <button onClick={sair}
               className="w-full flex items-center gap-4 py-4">
