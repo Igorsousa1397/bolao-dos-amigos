@@ -1,30 +1,26 @@
 'use client'
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { useSearchParams } from 'next/navigation'
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter()
   const supabase = createClient()
+  const searchParams = useSearchParams()
+  const conviteParam = searchParams.get('convite')
   const [email, setEmail] = useState('')
   const [senha, setSenha] = useState('')
   const [erro, setErro] = useState('')
   const [carregando, setCarregando] = useState(false)
-  const searchParams = useSearchParams()
-  const conviteParam = searchParams.get('convite')
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
     setErro('')
     setCarregando(true)
-    console.log('convite_codigo no localStorage:', localStorage.getItem('convite_codigo'))
     const { error: loginError } = await supabase.auth.signInWithPassword({ email, password: senha })
     if (loginError) { setErro('E-mail ou senha incorretos'); setCarregando(false); return }
-
-    const codigo = localStorage.getItem('convite_codigo')
+    const codigo = conviteParam
     if (codigo) {
-      localStorage.removeItem('convite_codigo')
       router.push(`/entrar/${codigo}`)
     } else {
       router.push('/palpites')
@@ -35,19 +31,10 @@ export default function LoginPage() {
     const redirectTo = conviteParam
       ? `${location.origin}/auth/callback?convite=${conviteParam}`
       : `${location.origin}/auth/callback`
-
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo }
     })
-  }
-  
-  const codigo = conviteParam || localStorage.getItem('convite_codigo')
-  if (codigo) {
-    localStorage.removeItem('convite_codigo')
-    router.push(`/entrar/${codigo}`)
-  } else {
-    router.push('/palpites')
   }
 
   return (
@@ -103,5 +90,12 @@ export default function LoginPage() {
         </div>
       </div>
     </main>
+  )
+}
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   )
 }
