@@ -180,15 +180,34 @@ export default function RegrasPage() {
     )}
 
         {/* Desempate */}
-        <div className="bg-white rounded-2xl border border-gray-100 p-5">
+        <div className="bg-white rounded-2xl border border-gray-100 p-5 mb-4">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-2xl bg-purple-50 flex items-center justify-center">
               <RefreshCw size={20} className="text-purple-600" strokeWidth={1.5} />
             </div>
             <h2 className="font-semibold text-gray-800">Desempate</h2>
           </div>
-          <p className="text-sm text-gray-500 leading-relaxed">Em caso de empate em pontos, o critério de desempate é o número de <strong className="text-gray-800">placares exatos</strong>. Se ainda houver empate, considera-se o número de ganhadores certos.</p>
+          <p className="text-sm text-gray-500 leading-relaxed mb-3">Em caso de empate em pontos, os critérios são aplicados na seguinte ordem:</p>
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-3 py-2.5 px-3 bg-purple-50 rounded-xl">
+              <span className="text-sm font-bold text-purple-700 w-6">1º</span>
+              <span className="text-sm text-gray-700">Quem fizer mais pontos na <strong>primeira rodada</strong></span>
+            </div>
+            <div className="flex items-center gap-3 py-2.5 px-3 bg-gray-50 rounded-xl">
+              <span className="text-sm font-bold text-purple-700 w-6">2º</span>
+              <span className="text-sm text-gray-700">Quem fizer mais pontos na <strong>segunda rodada</strong></span>
+            </div>
+            <div className="flex items-center gap-3 py-2.5 px-3 bg-gray-50 rounded-xl">
+              <span className="text-sm font-bold text-purple-700 w-6">3º</span>
+              <span className="text-sm text-gray-700">Número de <strong>placares exatos</strong></span>
+            </div>
+            <div className="flex items-center gap-3 py-2.5 px-3 bg-gray-50 rounded-xl">
+              <span className="text-sm font-bold text-purple-700 w-6">4º</span>
+              <span className="text-sm text-gray-700">Número de <strong>ganhadores certos</strong></span>
+            </div>
+          </div>
         </div>
+
       </div>
 
       {/* Botão voltar fixo */}
