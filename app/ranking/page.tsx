@@ -42,7 +42,14 @@ export default function RankingPage() {
 
       const avatarMap = Object.fromEntries((profiles || []).map(p => [p.id, p.avatar_url]))
 
-      const comEu = data.map((r: any) => ({ ...r, sou_eu: r.user_id === user.id }))
+      const comEu = data.map((r: any) => ({
+        ...r,
+        sou_eu: r.user_id === user.id,
+        avatar_url: avatarMap[r.user_id] || null,
+      }))
+
+      console.log('avatars:', comEu.map(r => ({ nome: r.nome, avatar_url: r.avatar_url })))
+
       setRanking(comEu)
       setMinha(comEu.find((r: any) => r.user_id === user.id) || null)
       setCarregando(false)

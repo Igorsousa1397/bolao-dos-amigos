@@ -15,6 +15,7 @@ type Jogo = {
   time_casa?: Time; time_fora?: Time
   palpite?: { gols_casa: number; gols_fora: number } | null
   palpite_aberto: boolean
+  extras?: any[] 
 }
 type PalpiteTodos = {
   user_id: string
@@ -319,7 +320,7 @@ function JogoCard({ jogo, userId, pagou, onSalvo, habilitarExtra, valorExtra2, v
 
       {habilitarExtra && <PalpiteExtra
         jogoId={jogo.id}
-        extras={[]}
+        extras={jogo.extras || []}
         palpiteAberto={jogo.palpite_aberto && pagou}
         onPago={() => {}}
         valorExtra2={valorExtra2}
@@ -410,13 +411,26 @@ export default function PalpitesPage() {
       const palpiteMap: Record<string, any> = {}
       ;(palpites || []).forEach((p: any) => { palpiteMap[p.jogo_id] = p })
 
+      // ← busca extras
+      const { data: extrasData } = await supabase
+        .from('palpites_extras')
+        .select('numero, gols_casa, gols_fora, status_pagamento, pontos, jogo_id')
+        .eq('user_id', userId)
+        .in('jogo_id', ids)
+      const extrasMap: Record<string, any[]> = {}
+      ;(extrasData || []).forEach((e: any) => {
+        if (!extrasMap[e.jogo_id]) extrasMap[e.jogo_id] = []
+        extrasMap[e.jogo_id].push(e)
+      })
+
       const agora = new Date()
       setJogos(jogosData.map((j: any) => ({
         ...j,
         time_casa: timesMap[j.time_casa_id],
         time_fora: timesMap[j.time_fora_id],
         palpite: palpiteMap[j.id] || null,
-        palpite_aberto: new Date(j.data_hora) > new Date(agora.getTime() + 60 * 60 * 1000) && j.status === 'agendado',
+        extras: extrasMap[j.id] || [],  // ← adiciona extras
+        palpite_aberto: new Date(j.data_hora) > new Date(agora.getTime() + 60 * 60 * 1000) && j.status === 'agendado',  
       })))
       setCarregando(false)
     }
