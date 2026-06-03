@@ -147,7 +147,8 @@ export default function EntrarPage() {
               } else {
                 entrar()
               }
-            }}>
+            }} disabled={entrando}
+              style={{ width: '100%', background: '#1a6b3c', color: 'white', fontWeight: 700, padding: '18px', borderRadius: '16px', fontSize: '16px', border: 'none', cursor: 'pointer', opacity: entrando ? 0.7 : 1 }}>
               {entrando ? 'Entrando...' : 'Entrar no bolão →'}
             </button>
           </div>
