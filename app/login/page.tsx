@@ -28,17 +28,12 @@ function LoginForm() {
   }
 
   async function handleGoogle() {
-    const redirectTo = conviteParam
-      ? `${location.origin}/auth/callback?convite=${conviteParam}`
-      : `${location.origin}/auth/callback`
-
+    const next = conviteParam ? `/entrar/${conviteParam}` : '/palpites'
+    
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { 
-        redirectTo,
-        queryParams: {
-          state: conviteParam || '',
-        }
+        redirectTo: `${location.origin}/auth/callback?next=${encodeURIComponent(next)}`
       }
     })
   }
