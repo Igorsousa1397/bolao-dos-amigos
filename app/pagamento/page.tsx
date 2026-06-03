@@ -118,7 +118,7 @@ export default function PagamentoPage() {
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">Pagamento via</span>
-                  <span className="text-gray-700">Mercado Pago</span>
+                  <span className="text-gray-700">PIX</span>
                 </div>
                 <div className="border-t border-gray-100 pt-3 flex justify-between text-sm">
                   <span className="text-gray-500">Prêmio estimado</span>
@@ -152,7 +152,7 @@ export default function PagamentoPage() {
                     <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" fill="white" opacity="0.3"/>
                     <path d="M8 12l2.5 2.5L16 9" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
-                  Pagar Pagar R$ {valorInscricao.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} com Mercado Pago
+                  Pagar R$ {valorInscricao.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} via PIX
                 </>
               )}
             </button>
