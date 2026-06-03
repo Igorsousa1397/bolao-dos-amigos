@@ -32,12 +32,13 @@ export default function LoginPage() {
   }
 
   async function handleGoogle() {
-    if (conviteParam) {
-      document.cookie = `convite_codigo=${conviteParam}; path=/; max-age=3600`
-    }
+    const redirectTo = conviteParam
+      ? `${location.origin}/auth/callback?convite=${conviteParam}`
+      : `${location.origin}/auth/callback`
+
     await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${location.origin}/auth/callback` }
+      options: { redirectTo }
     })
   }
   
