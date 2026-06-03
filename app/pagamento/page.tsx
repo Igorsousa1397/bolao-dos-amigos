@@ -35,7 +35,7 @@ export default function PagamentoPage() {
         .eq('user_id', user.id)
         .maybeSingle()
 
-      if (!data) { setStatus('nao_iniciado'); return }
+      if (!data || data.status === 'pendente') { setStatus('nao_iniciado'); return }
       setStatus(data.status as StatusPag)
       if (data.pago_em) {
         setPagoEm(new Date(data.pago_em).toLocaleDateString('pt-BR', {
