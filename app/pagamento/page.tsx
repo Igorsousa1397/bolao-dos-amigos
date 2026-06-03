@@ -89,6 +89,8 @@ export default function PagamentoPage() {
         )}
 
         {status === 'aprovado' && (
+        <>
+          <Premiacao />
           <div className="bg-green-50 border border-green-200 rounded-2xl p-6 text-center">
             <div className="text-5xl mb-3">✅</div>
             <h2 className="text-green-800 font-semibold text-lg">Pagamento confirmado!</h2>
@@ -97,7 +99,8 @@ export default function PagamentoPage() {
               Você está inscrito e pode fazer seus palpites.
             </p>
           </div>
-        )}
+        </>
+      )}
 
         {(status === 'nao_iniciado' || status === 'recusado') && (
           <>

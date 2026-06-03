@@ -12,6 +12,7 @@ type RankingItem = {
   ganhadores_certos: number
   posicao: number
   sou_eu?: boolean
+  avatar_url?: string | null
 }
 
 export default function RankingPage() {
@@ -31,6 +32,15 @@ export default function RankingPage() {
         .order('posicao')
 
       if (!data) return
+
+      // Buscar avatars dos usuários do ranking
+      const userIds = data.map((r: any) => r.user_id)
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, avatar_url')
+        .in('id', userIds)
+
+      const avatarMap = Object.fromEntries((profiles || []).map(p => [p.id, p.avatar_url]))
 
       const comEu = data.map((r: any) => ({ ...r, sou_eu: r.user_id === user.id }))
       setRanking(comEu)
@@ -110,9 +120,17 @@ export default function RankingPage() {
                 <div className="w-8 text-center text-sm font-semibold text-gray-400">
                   {medalha(r.posicao)}
                 </div>
+                {r.avatar_url ? (
+                <img
+                  src={r.avatar_url}
+                  alt={r.nome}
+                  className="w-9 h-9 rounded-full object-cover flex-shrink-0"
+                />
+              ) : (
                 <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0 ${cores[i % cores.length]}`}>
                   {iniciais(r.nome)}
                 </div>
+              )}
                 <div className="flex-1 min-w-0">
                   <p className={`text-sm font-medium truncate ${r.sou_eu ? 'text-green-800' : 'text-gray-800'}`}>
                     {r.nome} {r.sou_eu ? '⭐' : ''}

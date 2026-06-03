@@ -51,7 +51,7 @@ function GrupoData({ data, jogos, userId, pagou, onSalvo, habilitarExtra, valorE
   valorExtra2: number; valorExtra3: number; valorExtra4: number
   onSalvo: (id: string, casa: number, fora: number) => void
 }){
-  const [aberto, setAberto] = useState(true)
+  const [aberto, setAberto] = useState(false)
   const temPendente = jogos.some(j => j.palpite_aberto && pagou && !j.palpite)
 
   return (
@@ -345,6 +345,7 @@ export default function PalpitesPage() {
   const [valorExtra3, setValorExtra3] = useState(15)
   const [valorExtra4, setValorExtra4] = useState(20)
   const [habilitarOuro, setHabilitarOuro] = useState(true)
+  const [nomeBolao, setNomeBolao] = useState('')
   
 
   useEffect(() => {
@@ -358,14 +359,14 @@ export default function PalpitesPage() {
         supabase.from('profiles').select('bolao_id').eq('id', user.id).single(),
       ])
 
-      let bolaoConfig: any = { habilitar_palpite_extra: true, habilitar_palpite_ouro: true, valor_palpite_extra_2: 10, valor_palpite_extra_3: 15, valor_palpite_extra_4: 20 }
+      let bolaoConfig: any = { nome: '', habilitar_palpite_extra: true, habilitar_palpite_ouro: true, valor_palpite_extra_2: 10, valor_palpite_extra_3: 15, valor_palpite_extra_4: 20 }
       if (profileData?.bolao_id) {
         const { data: bolao } = await supabase
             .from('boloes')
-            .select('habilitar_palpite_extra, habilitar_palpite_ouro, valor_palpite_extra_2, valor_palpite_extra_3, valor_palpite_extra_4')
-            .eq('id', profileData.bolao_id)
+.select('nome, habilitar_palpite_extra, habilitar_palpite_ouro, valor_palpite_extra_2, valor_palpite_extra_3, valor_palpite_extra_4')            .eq('id', profileData.bolao_id)
             .single()
         if (bolao) bolaoConfig = bolao
+        setNomeBolao(bolao?.nome || '')
       }
 
       setHabilitarExtra(bolaoConfig.habilitar_palpite_extra)
@@ -432,7 +433,7 @@ export default function PalpitesPage() {
 
   return (
     <div>
-      <Header titulo="Palpites" subtitulo="Copa do Mundo 2026" />
+      <Header titulo="Palpites" subtitulo={nomeBolao || 'Copa do Mundo 2026'} />
 
       {!pagou && !carregando && (
         <div className="mx-4 mt-4 flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-2xl p-4">
