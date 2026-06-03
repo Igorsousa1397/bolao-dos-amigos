@@ -175,9 +175,17 @@ export default function AdminPage() {
   }
 
   async function loadPagamentos() {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    const { data: bolaoData } = await supabase
+      .from('boloes').select('id').eq('admin_id', user.id).single()
+    if (!bolaoData) return
+
     const { data } = await supabase
-      .from('pagamentos').select('id, valor, status, pago_em, profiles(nome, email)')
-      .order('created_at', { ascending: false })
+      .from('bolao_membros')
+      .select('user_id, joined_at, profiles(nome, email), pagamentos(status, pago_em)')
+      .eq('bolao_id', bolaoData.id)
+      .order('joined_at')
     setPagamentos((data || []) as any)
   }
 
@@ -280,7 +288,7 @@ export default function AdminPage() {
                 className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors text-center ${
                 aba === a ? 'border-white text-white' : 'border-transparent text-white/50'
               }`}>
-              {a === 'fases' ? 'Fases' : a === 'jogos' ? 'Jogos' : a === 'pagamentos' ? 'Pagamentos' : 'Bolão'}
+              {a === 'fases' ? 'Fases' : a === 'jogos' ? 'Jogos' : a === 'pagamentos' ? 'Participantes' : 'Bolão'}
             </button>
           ))}
         </div>
@@ -348,25 +356,25 @@ export default function AdminPage() {
         {aba === 'pagamentos' && (
           <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
             {pagamentos.length === 0 ? (
-              <p className="text-center text-gray-400 py-8 text-sm">Nenhum pagamento ainda</p>
-            ) : pagamentos.map((p, i) => (
-              <div key={p.id} className={`px-4 py-4 ${i < pagamentos.length - 1 ? 'border-b border-gray-50' : ''}`}>
+              <p className="text-center text-gray-400 py-8 text-sm">Nenhum participante ainda</p>
+            ) : pagamentos.map((p: any, i: number) => (
+              <div key={p.user_id} className={`px-4 py-4 ${i < pagamentos.length - 1 ? 'border-b border-gray-50' : ''}`}>
                 <div className="flex items-center justify-between">
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-gray-800 truncate">{p.profiles?.nome}</p>
                     <p className="text-xs text-gray-400 truncate">{p.profiles?.email}</p>
-                    {p.pago_em && <p className="text-xs text-gray-400 mt-0.5">{new Date(p.pago_em).toLocaleDateString('pt-BR')}</p>}
                   </div>
                   <div className="flex-shrink-0 ml-2">
-                    {p.status === 'aprovado' ? (
+                    {p.pagamentos?.[0]?.status === 'aprovado' ? (
                       <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-medium">Pago</span>
-                    ) : p.status === 'pendente' ? (
-                      <button onClick={() => aprovarPagamento(p.id)} disabled={salvando === p.id}
-                        className="text-xs bg-amber-100 text-amber-700 px-3 py-1.5 rounded-full font-medium active:scale-95 transition-transform">
-                        {salvando === p.id ? '...' : 'Aprovar'}
+                    ) : p.pagamentos?.[0]?.status === 'pendente' ? (
+                      <button onClick={() => aprovarPagamento(p.pagamentos[0].id)}
+                        disabled={salvando === p.pagamentos[0].id}
+                        className="text-xs bg-amber-100 text-amber-700 px-3 py-1.5 rounded-full font-medium">
+                        {salvando === p.pagamentos[0].id ? '...' : 'Aprovar'}
                       </button>
                     ) : (
-                      <span className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded-full font-medium">Recusado</span>
+                      <span className="text-xs bg-gray-100 text-gray-400 px-2 py-1 rounded-full font-medium">Pendente</span>
                     )}
                   </div>
                 </div>
