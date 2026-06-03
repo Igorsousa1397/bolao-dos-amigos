@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { useSearchParams } from 'next/navigation'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -10,6 +11,8 @@ export default function LoginPage() {
   const [senha, setSenha] = useState('')
   const [erro, setErro] = useState('')
   const [carregando, setCarregando] = useState(false)
+  const searchParams = useSearchParams()
+  const conviteParam = searchParams.get('convite')
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
@@ -29,15 +32,21 @@ export default function LoginPage() {
   }
 
   async function handleGoogle() {
-    const codigo = localStorage.getItem('convite_codigo')
-    const redirectTo = codigo
-      ? `${location.origin}/auth/callback?convite=${codigo}`
-      : `${location.origin}/auth/callback`
-
+    if (conviteParam) {
+      document.cookie = `convite_codigo=${conviteParam}; path=/; max-age=3600`
+    }
     await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo }
+      options: { redirectTo: `${location.origin}/auth/callback` }
     })
+  }
+  
+  const codigo = conviteParam || localStorage.getItem('convite_codigo')
+  if (codigo) {
+    localStorage.removeItem('convite_codigo')
+    router.push(`/entrar/${codigo}`)
+  } else {
+    router.push('/palpites')
   }
 
   return (
