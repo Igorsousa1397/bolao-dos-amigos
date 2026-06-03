@@ -63,8 +63,9 @@ export default function EntrarPage() {
 
   async function entrar() {
     setEntrando(true)
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user || !bolao) return
+    const { data: { session } } = await supabase.auth.getSession()
+    const user = session?.user
+    if (!user || !bolao) { setEntrando(false); return }
 
     const { error } = await supabase.from('bolao_membros').insert({
       bolao_id: bolao.id, user_id: user.id,
