@@ -15,6 +15,7 @@ export default function LoginPage() {
     e.preventDefault()
     setErro('')
     setCarregando(true)
+    console.log('convite_codigo no localStorage:', localStorage.getItem('convite_codigo'))
     const { error: loginError } = await supabase.auth.signInWithPassword({ email, password: senha })
     if (loginError) { setErro('E-mail ou senha incorretos'); setCarregando(false); return }
 
