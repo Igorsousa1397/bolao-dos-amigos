@@ -4,9 +4,10 @@ import { NextResponse } from 'next/server'
 export async function POST(request: Request) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+  console.log('user:', user?.id, 'token presente:', !!request.headers.get('authorization'))
 
   if (!user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
-
+    
   const { data: existing } = await supabase
     .from('pagamentos')
     .select('status')
