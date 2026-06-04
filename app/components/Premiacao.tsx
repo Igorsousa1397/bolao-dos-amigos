@@ -4,26 +4,54 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Trophy, Flame } from 'lucide-react'
 
-export default function Premiacao() {
+type PremiacaoProps = {
+  bolaoId: string | null
+  valorInscricao: number
+  habilitarAzarao: boolean
+  valorAzarao?: number
+}
+
+export default function Premiacao({
+  bolaoId,
+  valorInscricao,
+  habilitarAzarao,
+  valorAzarao = 50,
+}: PremiacaoProps) {
   const supabase = createClient()
   const [total, setTotal] = useState(0)
   const [participantes, setParticipantes] = useState(0)
 
   useEffect(() => {
     async function load() {
+      if (!bolaoId) return
+
+      // membros aprovados DESTE bolão (count por bolão, não global)
+      const { data: membros } = await supabase
+        .from('bolao_membros')
+        .select('user_id')
+        .eq('bolao_id', bolaoId)
+      const userIds = (membros || []).map((m: any) => m.user_id)
+      if (userIds.length === 0) {
+        setParticipantes(0)
+        setTotal(0)
+        return
+      }
+
       const { count } = await supabase
         .from('pagamentos')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'aprovado')
+        .in('user_id', userIds)
+
       const qtd = count || 0
       setParticipantes(qtd)
-      setTotal(qtd * 100)
+      setTotal(qtd * valorInscricao)
     }
     load()
-  }, [])
+  }, [bolaoId, valorInscricao])
 
-  const AZARAO = 50
-  const premioLiquido = Math.max(0, total - AZARAO)
+  const descontoAzarao = habilitarAzarao ? valorAzarao : 0
+  const premioLiquido = Math.max(0, total - descontoAzarao)
 
   const premios = [
     { emoji: '🥇', label: '1º lugar', pct: 60, valor: premioLiquido * 0.6, cor: 'bg-yellow-400' },
@@ -64,17 +92,19 @@ export default function Premiacao() {
         ))}
       </div>
 
-      {/* Azarão */}
-      <div className="bg-orange-50 border border-orange-100 rounded-xl p-3 mb-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Flame size={16} className="text-orange-500" strokeWidth={1.5} />
-          <div>
-            <p className="text-sm font-semibold text-orange-800">Azarão 🃏</p>
-            <p className="text-xs text-orange-500">Quem ficar em último lugar</p>
+      {/* Azarão — só aparece se habilitado */}
+      {habilitarAzarao && (
+        <div className="bg-orange-50 border border-orange-100 rounded-xl p-3 mb-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Flame size={16} className="text-orange-500" strokeWidth={1.5} />
+            <div>
+              <p className="text-sm font-semibold text-orange-800">Azarão 🃏</p>
+              <p className="text-xs text-orange-500">Quem ficar em último lugar</p>
+            </div>
           </div>
+          <span className="text-sm font-bold text-orange-700">{fmt(valorAzarao)}</span>
         </div>
-        <span className="text-sm font-bold text-orange-700">R$ 50,00</span>
-      </div>
+      )}
 
       {/* Resumo */}
       <div className="border-t border-gray-50 pt-3 flex flex-col gap-1.5">
@@ -82,10 +112,12 @@ export default function Premiacao() {
           <span>Total arrecadado</span>
           <span className="font-medium text-gray-600">{fmt(total)}</span>
         </div>
-        <div className="flex justify-between text-xs text-gray-400">
-          <span>Azarão (fixo)</span>
-          <span className="font-medium text-orange-500">− R$ 50,00</span>
-        </div>
+        {habilitarAzarao && (
+          <div className="flex justify-between text-xs text-gray-400">
+            <span>Azarão (fixo)</span>
+            <span className="font-medium text-orange-500">− {fmt(valorAzarao)}</span>
+          </div>
+        )}
         <div className="flex justify-between text-sm font-semibold text-gray-800 pt-1 border-t border-gray-50">
           <span>Prêmio líquido</span>
           <span className="text-green-700">{fmt(premioLiquido)}</span>

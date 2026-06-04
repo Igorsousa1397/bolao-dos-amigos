@@ -12,6 +12,9 @@ export default function PagamentoPage() {
   const [valorInscricao, setValorInscricao] = useState(100)
   const [chavePix, setChavePix] = useState<string | null>(null)
   const [copiado, setCopiado] = useState(false)
+  const [bolaoId, setBolaoId] = useState<string | null>(null)
+  const [habilitarAzarao, setHabilitarAzarao] = useState(true)
+  const [valorAzarao, setValorAzarao] = useState(50)
 
   useEffect(() => {
     async function load() {
@@ -21,11 +24,17 @@ export default function PagamentoPage() {
       const { data: profile } = await supabase
         .from('profiles').select('bolao_id').eq('id', user.id).single()
       if (profile?.bolao_id) {
+        setBolaoId(profile.bolao_id)
         const { data: bolao } = await supabase
-          .from('boloes').select('valor_inscricao, chave_pix').eq('id', profile.bolao_id).single()
+          .from('boloes')
+          .select('valor_inscricao, chave_pix, habilitar_azarao, valor_azarao')
+          .eq('id', profile.bolao_id)
+          .single()
         if (bolao) {
           setValorInscricao(bolao.valor_inscricao)
           setChavePix(bolao.chave_pix || null)
+          setHabilitarAzarao(bolao.habilitar_azarao ?? true)
+          setValorAzarao(bolao.valor_azarao ?? 50)
         }
       }
 
@@ -67,7 +76,7 @@ export default function PagamentoPage() {
 
         {status === 'aprovado' && (
           <>
-            <Premiacao />
+            <Premiacao bolaoId={bolaoId} valorInscricao={valorInscricao} habilitarAzarao={habilitarAzarao} valorAzarao={valorAzarao} />
             <div className="bg-green-50 border border-green-200 rounded-2xl p-6 text-center">
               <div className="text-5xl mb-3">✅</div>
               <h2 className="text-green-800 font-semibold text-lg">Pagamento confirmado!</h2>
@@ -79,7 +88,7 @@ export default function PagamentoPage() {
 
         {(status === 'nao_iniciado' || status === 'recusado') && (
           <>
-            <Premiacao />
+            <Premiacao bolaoId={bolaoId} valorInscricao={valorInscricao} habilitarAzarao={habilitarAzarao} valorAzarao={valorAzarao} />
             <div className="bg-white rounded-2xl border border-gray-100 p-5 mb-4">
               <h2 className="font-semibold text-gray-800 text-base mb-4">Bolão Copa 2026</h2>
               <div className="flex flex-col gap-3">
