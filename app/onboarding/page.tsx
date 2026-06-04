@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Trophy, Users, Plus, ArrowRight, Copy, Check } from 'lucide-react'
 
-type Etapa = 'escolha' | 'criar' | 'entrar' | 'criado'
+type Etapa = 'escolha' | 'criar' | 'plano' | 'entrar' | 'criado'
 
 export default function OnboardingPage() {
   const router = useRouter()
@@ -16,6 +16,8 @@ export default function OnboardingPage() {
   const [valorInscricao, setValorInscricao] = useState('100')
   const [codigoConvite, setCodigoConvite] = useState('')
   const [bolaoLink, setBolaoLink] = useState('')
+  const [bolaoId, setBolaoId] = useState('')
+  const [planoSelecionado, setPlanoSelecionado] = useState(15)
   const [copiado, setCopiado] = useState(false)
   const [erro, setErro] = useState('')
   const [carregando, setCarregando] = useState(false)
@@ -30,7 +32,13 @@ export default function OnboardingPage() {
 
     const { data: bolao, error } = await supabase
       .from('boloes')
-      .insert({ nome: nomeBolao.trim(), admin_id: user.id, valor_inscricao: Number(valorInscricao) })
+      .insert({ 
+        nome: nomeBolao.trim(), 
+        admin_id: user.id, 
+        valor_inscricao: Number(valorInscricao),
+        plano: 5,
+        status_plano: 'ativo',
+      })
       .select().single()
 
     if (error || !bolao) { setErro('Erro ao criar bolão.'); setCarregando(false); return }
@@ -41,8 +49,25 @@ export default function OnboardingPage() {
     }).eq('id', user.id)
 
     setBolaoLink(`${window.location.origin}/entrar/${bolao.codigo_convite}`)
+    setBolaoId(bolao.id)
     setEtapa('criado')
     setCarregando(false)
+  }
+
+  async function pagarPlano() {
+    setCarregando(true); setErro('')
+    const res = await fetch('/api/plano/criar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ bolao_id: bolaoId, plano: planoSelecionado }),
+    })
+    const data = await res.json()
+    if (data.init_point) {
+      window.location.href = data.init_point
+    } else {
+      setErro('Erro ao processar pagamento.')
+      setCarregando(false)
+    }
   }
 
   async function entrarBolao() {
@@ -74,6 +99,14 @@ export default function OnboardingPage() {
     position: 'absolute' as const, top: 0, left: 0, right: 0, bottom: 0,
     backgroundImage: "url('/copa.jpg')", backgroundSize: 'cover', backgroundPosition: 'center top',
   }
+
+  const PLANOS = [
+    { plano: 15, valor: 30 },
+    { plano: 30, valor: 60 },
+    { plano: 45, valor: 90 },
+  ]
+
+  const valorPlano = PLANOS.find(p => p.plano === planoSelecionado)?.valor || 30
 
   return (
     <main style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', position: 'relative', background: '#000' }}>
@@ -134,9 +167,33 @@ export default function OnboardingPage() {
               {erro && <p style={{ color: '#f87171', fontSize: '13px', textAlign: 'center', marginBottom: '12px' }}>{erro}</p>}
               <button onClick={criarBolao} disabled={carregando}
                 style={{ width: '100%', background: '#1a6b3c', color: 'white', fontWeight: 700, padding: '16px', borderRadius: '14px', fontSize: '15px', border: 'none', cursor: 'pointer' }}>
-                {carregando ? 'Criando...' : 'Criar bolão →'}
+                {carregando ? 'Criando...' : 'Continuar →'}
               </button>
             </div>
+          </div>
+        )}
+
+        {etapa === 'plano' && (
+          <div style={{ width: '100%', maxWidth: '360px' }}>
+            <h2 style={{ color: 'white', fontSize: '28px', fontWeight: 700, marginBottom: '8px' }}>Escolha seu plano</h2>
+            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px', marginBottom: '24px' }}>Selecione o número de participantes</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
+              {PLANOS.map(({ plano, valor }) => (
+                <button key={plano} onClick={() => setPlanoSelecionado(plano)}
+                  style={{ width: '100%', background: planoSelecionado === plano ? '#1a6b3c' : 'rgba(255,255,255,0.08)', border: `1px solid ${planoSelecionado === plano ? '#1a6b3c' : 'rgba(255,255,255,0.2)'}`, borderRadius: '16px', padding: '16px 20px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ textAlign: 'left' }}>
+                    <p style={{ color: 'white', fontWeight: 700, fontSize: '16px', margin: 0 }}>Até {plano} pessoas</p>
+                    <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px', margin: '2px 0 0' }}>R$ {(valor / plano).toFixed(2)} por pessoa</p>
+                  </div>
+                  <span style={{ color: 'white', fontWeight: 700, fontSize: '20px' }}>R$ {valor}</span>
+                </button>
+              ))}
+            </div>
+            {erro && <p style={{ color: '#f87171', fontSize: '13px', textAlign: 'center', marginBottom: '12px' }}>{erro}</p>}
+            <button onClick={pagarPlano} disabled={carregando}
+              style={{ width: '100%', background: '#1a6b3c', color: 'white', fontWeight: 700, padding: '16px', borderRadius: '16px', fontSize: '15px', border: 'none', cursor: 'pointer' }}>
+              {carregando ? 'Aguarde...' : `Pagar R$ ${valorPlano} via PIX`}
+            </button>
           </div>
         )}
 

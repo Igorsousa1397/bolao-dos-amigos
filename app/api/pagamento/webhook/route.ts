@@ -39,6 +39,13 @@ export async function POST(request: Request) {
     await supabase.from('palpites_extras')
       .update({ status_pagamento: novoStatus })
       .eq('id', extraId)
+  } else if (tipo === 'plano') {
+    const bolaoId = payment.metadata?.bolao_id
+    if (novoStatus === 'aprovado') {
+      await supabase.from('boloes')
+        .update({ status_plano: 'ativo' })
+        .eq('id', bolaoId)
+    }
   } else {
     await supabase.from('pagamentos').update({
       mp_payment_id: String(payment.id),

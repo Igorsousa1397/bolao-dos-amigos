@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { ChevronDown, Check, Copy, Shield } from 'lucide-react'
 
+
 type Fase = { id: string; fase: string; liberada: boolean; ordem: number }
 type Jogo = {
   id: string; fase: string; data_hora: string; status: string
@@ -142,6 +143,7 @@ export default function AdminPage() {
   const [valorExtra2, setValorExtra2] = useState('10')
   const [valorExtra3, setValorExtra3] = useState('15')
   const [valorExtra4, setValorExtra4] = useState('20')
+  const [chavePix, setChavePix] = useState('')
 
   useEffect(() => {
     async function verificarAdmin() {
@@ -218,6 +220,7 @@ export default function AdminPage() {
       setHabilitarAzarao(data.habilitar_azarao ?? true)
       setHabilitarOuro(data.habilitar_palpite_ouro ?? true)
       setHabilitarExtra(data.habilitar_palpite_extra ?? true)
+      setChavePix(data.chave_pix || '')
       setValorExtra2((data.valor_palpite_extra_2 ?? 10).toString())
       setValorExtra3((data.valor_palpite_extra_3 ?? 15).toString())
       setValorExtra4((data.valor_palpite_extra_4 ?? 20).toString())
@@ -259,7 +262,9 @@ export default function AdminPage() {
     if (!bolao) return
     setSalvandoBolao(true)
     await supabase.from('boloes').update({
-      nome: nomeBolao, valor_inscricao: Number(valorBolao),
+      nome: nomeBolao, 
+      valor_inscricao: Number(valorBolao),
+      chave_pix: chavePix,
       habilitar_azarao: habilitarAzarao,
       habilitar_palpite_ouro: habilitarOuro,
       habilitar_palpite_extra: habilitarExtra,
@@ -417,8 +422,15 @@ export default function AdminPage() {
                   <input type="number" value={valorBolao} onChange={e => setValorBolao(e.target.value)}
                     className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 outline-none focus:border-green-500" />
                 </div>
+                <div>
+                <label className="text-xs text-gray-500 font-medium mb-1.5 block">Chave PIX</label>
+                <input type="text" value={chavePix} onChange={e => setChavePix(e.target.value)}
+                  placeholder="CPF, e-mail, telefone ou chave aleatória"
+                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 outline-none focus:border-green-500" />
+                <p className="text-xs text-gray-400 mt-1">Os participantes verão essa chave para pagar a inscrição</p>
+              </div>
                 <button onClick={salvarBolao}
-                  disabled={salvandoBolao || (bolao && nomeBolao === bolao.nome && valorBolao === bolao.valor_inscricao.toString())}
+                  disabled={salvandoBolao || (bolao && nomeBolao === bolao.nome && valorBolao === bolao.valor_inscricao.toString() && chavePix === (bolao.chave_pix || ''))}
                   className="w-full bg-[#1a6b3c] text-white font-semibold py-3 rounded-xl text-sm disabled:opacity-40 active:scale-95 transition-transform">
                   {salvandoBolao ? 'Salvando...' : 'Salvar alterações'}
                 </button>
