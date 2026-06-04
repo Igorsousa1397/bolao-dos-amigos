@@ -35,6 +35,7 @@ export default function EntrarPage() {
         return
       }
 
+      // Já é membro? mostra a tela certa sem chamar a RPC
       const { data: membro } = await supabase
         .from('bolao_membros')
         .select('id')
@@ -44,21 +45,9 @@ export default function EntrarPage() {
 
       if (membro) { setStatus('ja_membro'); return }
 
-      // Usuário logado e não é membro — tenta entrar (RPC valida limite)
-      setEntrando(true)
-      const { data: res, error } = await supabase.rpc('entrar_no_bolao', { p_codigo: codigo })
-      if (error || !res?.ok) {
-        setEntrando(false)
-        setStatus(res?.erro === 'lotado' ? 'lotado' : 'encontrado')
-        return
-      }
-      router.push('/palpites')
-      await supabase.from('profiles').update({
-        bolao_id: bolaoData.id,
-        onboarding_completo: true,
-      }).eq('id', user.id)
-
-      router.push('/palpites')
+      // Usuário logado e não é membro — apenas mostra o convite.
+      // A entrada acontece quando ele clicar no botão (função entrar()).
+      setStatus('encontrado')
     }
     load()
   }, [codigo])
@@ -70,12 +59,24 @@ export default function EntrarPage() {
       router.push(`/login?convite=${codigo}`)
       return
     }
+
     const { data: res, error } = await supabase.rpc('entrar_no_bolao', { p_codigo: codigo })
+
     if (error || !res?.ok) {
       setEntrando(false)
       if (res?.erro === 'lotado') setStatus('lotado')
+      else if (res?.erro === 'bolao_invalido') setStatus('erro')
+      // qualquer outro caso: permanece na tela de convite
       return
     }
+
+    // ok === true. Pode ser entrada nova ou já-membro (idempotente)
+    if (res.ja_membro) {
+      setStatus('ja_membro')
+      setEntrando(false)
+      return
+    }
+
     router.push('/palpites')
   }
 
