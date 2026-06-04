@@ -3,8 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { ChevronDown, Check, Copy, Shield } from 'lucide-react'
-
+import { ChevronDown, Check, Copy } from 'lucide-react'
 
 type Fase = { id: string; fase: string; liberada: boolean; ordem: number }
 type Jogo = {
@@ -123,9 +122,14 @@ export default function AdminPage() {
   const supabase = createClient()
   const router = useRouter()
   const [aba, setAba] = useState<'fases' | 'jogos' | 'pagamentos' | 'bolao'>('fases')
+  const [boloes, setBoloes] = useState<any[]>([])
+  const [bolaoSelecionadoId, setBolaoSelecionadoId] = useState<string | null>(null)
+  const [dropdownBolaoAberto, setDropdownBolaoAberto] = useState(false)
   const [bolao, setBolao] = useState<any>(null)
+  const [totalMembros, setTotalMembros] = useState(0)
   const [nomeBolao, setNomeBolao] = useState('')
   const [valorBolao, setValorBolao] = useState('')
+  const [chavePix, setChavePix] = useState('')
   const [salvandoBolao, setSalvandoBolao] = useState(false)
   const [copiado, setCopiado] = useState(false)
   const [toast, setToast] = useState('')
@@ -143,7 +147,7 @@ export default function AdminPage() {
   const [valorExtra2, setValorExtra2] = useState('10')
   const [valorExtra3, setValorExtra3] = useState('15')
   const [valorExtra4, setValorExtra4] = useState('20')
-  const [chavePix, setChavePix] = useState('')
+  const [confirmandoPlano, setConfirmandoPlano] = useState(false)
 
   useEffect(() => {
     async function verificarAdmin() {
@@ -152,11 +156,21 @@ export default function AdminPage() {
       const { data: profile } = await supabase
         .from('profiles').select('is_admin').eq('id', user.id).single()
       if (!profile?.is_admin) { router.push('/palpites'); return }
+
+      const { data: boloesData } = await supabase
+        .from('boloes').select('id, nome').eq('admin_id', user.id).order('created_at')
+      if (boloesData && boloesData.length > 0) {
+        setBoloes(boloesData)
+        setBolaoSelecionadoId(boloesData[0].id)
+      }
+
       setCarregando(false)
       loadFases()
     }
     verificarAdmin()
   }, [])
+
+  const bolaoSelecionado = boloes.find(b => b.id === bolaoSelecionadoId)
 
   async function loadFases() {
     const { data } = await supabase.from('fases').select('*').order('ordem')
@@ -177,42 +191,26 @@ export default function AdminPage() {
   }
 
   async function loadPagamentos() {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-    const { data: bolaoData } = await supabase
-      .from('boloes').select('id').eq('admin_id', user.id).single()
-    if (!bolaoData) return
-
+    if (!bolaoSelecionadoId) return
     const { data, error } = await supabase
       .from('bolao_membros')
       .select('user_id, joined_at, profiles(nome, email)')
-      .eq('bolao_id', bolaoData.id)
+      .eq('bolao_id', bolaoSelecionadoId)
       .order('joined_at')
-
     if (error) { console.error('erro membros:', error); return }
-
-    // Busca pagamentos separadamente
     const userIds = (data || []).map((m: any) => m.user_id)
     const { data: pags } = await supabase
       .from('pagamentos')
       .select('user_id, id, status, pago_em')
       .in('user_id', userIds)
-
     const pagsMap: Record<string, any> = {}
     ;(pags || []).forEach((p: any) => { pagsMap[p.user_id] = p })
-
-    const membros = (data || []).map((m: any) => ({
-      ...m,
-      pagamento: pagsMap[m.user_id] || null,
-    }))
-
-    setPagamentos(membros as any)
+    setPagamentos((data || []).map((m: any) => ({ ...m, pagamento: pagsMap[m.user_id] || null })) as any)
   }
 
   async function loadBolao() {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-    const { data } = await supabase.from('boloes').select('*').eq('admin_id', user.id).single()
+    if (!bolaoSelecionadoId) return
+    const { data } = await supabase.from('boloes').select('*').eq('id', bolaoSelecionadoId).single()
     if (data) {
       setBolao(data)
       setNomeBolao(data.nome)
@@ -225,13 +223,56 @@ export default function AdminPage() {
       setValorExtra3((data.valor_palpite_extra_3 ?? 15).toString())
       setValorExtra4((data.valor_palpite_extra_4 ?? 20).toString())
     }
+
+    const { count } = await supabase
+      .from('bolao_membros')
+      .select('*', { count: 'exact', head: true })
+      .eq('bolao_id', bolaoSelecionadoId)
+    setTotalMembros(count || 0)
   }
 
+  // Carrega dados conforme a aba e o bolão selecionado
   useEffect(() => {
+    if (!bolaoSelecionadoId) return
+    loadBolao()
     if (aba === 'jogos') loadJogos(faseJogos)
     if (aba === 'pagamentos') loadPagamentos()
-    if (aba === 'bolao') loadBolao()
-  }, [aba, faseJogos])
+  }, [aba, faseJogos, bolaoSelecionadoId])
+
+  // Confirma upgrade de plano ao voltar do Mercado Pago
+  useEffect(() => {
+    if (!bolaoSelecionadoId) return
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('plano') !== 'aprovado') return
+
+    let cancelado = false
+
+    async function confirmarUpgrade() {
+      setConfirmandoPlano(true)
+      // webhook pode levar alguns segundos — tenta por ~15s
+      for (let i = 0; i < 6 && !cancelado; i++) {
+        const { data } = await supabase
+          .from('boloes')
+          .select('status_plano')
+          .eq('id', bolaoSelecionadoId)
+          .single()
+        if (data?.status_plano === 'ativo') {
+          await loadBolao()
+          setToast('Plano atualizado com sucesso!')
+          setTimeout(() => setToast(''), 3000)
+          break
+        }
+        await new Promise(r => setTimeout(r, 2500))
+      }
+      if (!cancelado) {
+        setConfirmandoPlano(false)
+        router.replace('/admin') // limpa o ?plano= da URL
+      }
+    }
+
+    confirmarUpgrade()
+    return () => { cancelado = true }
+  }, [bolaoSelecionadoId])
 
   async function toggleFase(fase: Fase) {
     setSalvando(fase.id)
@@ -262,7 +303,7 @@ export default function AdminPage() {
     if (!bolao) return
     setSalvandoBolao(true)
     await supabase.from('boloes').update({
-      nome: nomeBolao, 
+      nome: nomeBolao,
       valor_inscricao: Number(valorBolao),
       chave_pix: chavePix,
       habilitar_azarao: habilitarAzarao,
@@ -272,7 +313,7 @@ export default function AdminPage() {
       valor_palpite_extra_3: Number(valorExtra3),
       valor_palpite_extra_4: Number(valorExtra4),
     }).eq('id', bolao.id)
-    await loadBolao() // recarrega para atualizar o bolao e desabilitar o botão
+    await loadBolao()
     setSalvandoBolao(false)
     setToast('Salvo com sucesso!')
     setTimeout(() => setToast(''), 3000)
@@ -285,7 +326,6 @@ export default function AdminPage() {
     setTimeout(() => setCopiado(false), 2000)
   }
 
-  // Agrupa jogos por data
   const jogosPorData = jogos.reduce((acc, j) => {
     const data = new Date(j.data_hora).toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })
     if (!acc[data]) acc[data] = []
@@ -299,16 +339,42 @@ export default function AdminPage() {
     </div>
   )
 
+  const limiteAtingido = totalMembros >= (bolao?.plano || 5)
+
   return (
     <div>
       <div className="bg-[#1a6b3c] pt-12 pb-0 px-4">
-        <div className="text-center mb-4">
+        <div className="text-center mb-3">
           <h1 className="text-white text-xl font-semibold">Admin</h1>
         </div>
+
+        {boloes.length > 1 && (
+          <div className="relative mb-3">
+            <button onClick={() => setDropdownBolaoAberto(!dropdownBolaoAberto)}
+              className="w-full flex items-center justify-between bg-white/15 border border-white/20 rounded-xl px-4 py-2.5">
+              <span className="text-white text-sm font-medium">{bolaoSelecionado?.nome || 'Selecionar bolão'}</span>
+              <ChevronDown size={16} className={`text-white/70 transition-transform ${dropdownBolaoAberto ? 'rotate-180' : ''}`} />
+            </button>
+            {dropdownBolaoAberto && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-100 rounded-2xl shadow-xl z-30 overflow-hidden">
+                {boloes.map(b => (
+                  <button key={b.id} onClick={() => { setBolaoSelecionadoId(b.id); setDropdownBolaoAberto(false) }}
+                    className={`w-full flex items-center justify-between px-4 py-3.5 text-sm border-b border-gray-50 last:border-0 ${
+                      bolaoSelecionadoId === b.id ? 'bg-green-50 text-green-700 font-semibold' : 'text-gray-700'
+                    }`}>
+                    {b.nome}
+                    {bolaoSelecionadoId === b.id && <Check size={14} className="text-green-600" />}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="flex">
           {(['fases', 'jogos', 'pagamentos', 'bolao'] as const).map(a => (
             <button key={a} onClick={() => setAba(a)}
-                className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors text-center ${
+              className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors text-center ${
                 aba === a ? 'border-white text-white' : 'border-transparent text-white/50'
               }`}>
               {a === 'fases' ? 'Fases' : a === 'jogos' ? 'Jogos' : a === 'pagamentos' ? 'Participantes' : 'Bolão'}
@@ -319,7 +385,6 @@ export default function AdminPage() {
 
       <div className="px-4 pt-4 pb-24">
 
-        {/* FASES */}
         {aba === 'fases' && (
           <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
             {fases.map((f, i) => (
@@ -339,7 +404,6 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* JOGOS */}
         {aba === 'jogos' && (
           <div onClick={() => dropdownFaseAberto && setDropdownFaseAberto(false)}>
             <div className="relative mb-4">
@@ -362,7 +426,6 @@ export default function AdminPage() {
                 </div>
               )}
             </div>
-
             {jogos.length === 0 ? (
               <p className="text-center text-gray-400 text-sm py-8">Nenhum jogo nesta fase</p>
             ) : (
@@ -375,7 +438,6 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* PAGAMENTOS */}
         {aba === 'pagamentos' && (
           <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
             {pagamentos.length === 0 ? (
@@ -406,7 +468,6 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* BOLÃO */}
         {aba === 'bolao' && (
           <div className="flex flex-col gap-4">
             <div className="bg-white rounded-2xl border border-gray-100 p-5">
@@ -423,12 +484,12 @@ export default function AdminPage() {
                     className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 outline-none focus:border-green-500" />
                 </div>
                 <div>
-                <label className="text-xs text-gray-500 font-medium mb-1.5 block">Chave PIX</label>
-                <input type="text" value={chavePix} onChange={e => setChavePix(e.target.value)}
-                  placeholder="CPF, e-mail, telefone ou chave aleatória"
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 outline-none focus:border-green-500" />
-                <p className="text-xs text-gray-400 mt-1">Os participantes verão essa chave para pagar a inscrição</p>
-              </div>
+                  <label className="text-xs text-gray-500 font-medium mb-1.5 block">Chave PIX</label>
+                  <input type="text" value={chavePix} onChange={e => setChavePix(e.target.value)}
+                    placeholder="CPF, e-mail, telefone ou chave aleatória"
+                    className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 outline-none focus:border-green-500" />
+                  <p className="text-xs text-gray-400 mt-1">Os participantes verão essa chave para pagar a inscrição</p>
+                </div>
                 <button onClick={salvarBolao}
                   disabled={salvandoBolao || (bolao && nomeBolao === bolao.nome && valorBolao === bolao.valor_inscricao.toString() && chavePix === (bolao.chave_pix || ''))}
                   className="w-full bg-[#1a6b3c] text-white font-semibold py-3 rounded-xl text-sm disabled:opacity-40 active:scale-95 transition-transform">
@@ -439,16 +500,33 @@ export default function AdminPage() {
 
             <div className="bg-white rounded-2xl border border-gray-100 p-5">
               <h3 className="font-semibold text-gray-800 mb-1">Link de convite</h3>
-              <p className="text-xs text-gray-400 mb-4">Compartilhe para convidar participantes</p>
+              <p className="text-xs text-gray-400 mb-2">Compartilhe para convidar participantes</p>
+              <p className="text-xs text-gray-400 mb-4">
+                {totalMembros}/{bolao?.plano || 5} participantes
+              </p>
               {bolao && (
                 <>
-                  <div className="bg-gray-50 rounded-xl px-4 py-3 text-sm text-gray-600 break-all mb-3">
-                    {typeof window !== 'undefined' ? `${window.location.origin}/entrar/${bolao.codigo_convite}` : ''}
-                  </div>
-                  <button onClick={copiarLink}
-                    className="w-full flex items-center justify-center gap-2 border border-[#1a6b3c] text-[#1a6b3c] font-semibold py-3 rounded-xl text-sm active:scale-95 transition-transform">
-                    {copiado ? <><Check size={14} /> Copiado!</> : <><Copy size={14} /> Copiar link de convite</>}
-                  </button>
+                  {!limiteAtingido && (
+                    <div className="bg-gray-50 rounded-xl px-4 py-3 text-sm text-gray-600 break-all mb-3">
+                      {typeof window !== 'undefined' ? `${window.location.origin}/entrar/${bolao.codigo_convite}` : ''}
+                    </div>
+                  )}
+                  {limiteAtingido ? (
+                    <div className="flex flex-col gap-2">
+                      <div className="bg-amber-50 border border-amber-100 rounded-xl px-4 py-3 text-sm text-amber-700 text-center mb-1">
+                        Bolão lotado! Limite de {bolao?.plano || 5} participantes atingido.
+                      </div>
+                      <button onClick={() => router.push('/upgrade')}
+                        className="w-full flex items-center justify-center gap-2 bg-amber-500 text-white font-semibold py-3 rounded-xl text-sm active:scale-95 transition-transform">
+                        🚀 Fazer upgrade do plano
+                      </button>
+                    </div>
+                  ) : (
+                    <button onClick={copiarLink}
+                      className="w-full flex items-center justify-center gap-2 border border-[#1a6b3c] text-[#1a6b3c] font-semibold py-3 rounded-xl text-sm active:scale-95 transition-transform">
+                      {copiado ? <><Check size={14} /> Copiado!</> : <><Copy size={14} /> Copiar link de convite</>}
+                    </button>
+                  )}
                 </>
               )}
             </div>
@@ -491,7 +569,6 @@ export default function AdminPage() {
                     <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${habilitarExtra ? 'left-6' : 'left-1'}`} />
                   </button>
                 </div>
-
                 {habilitarExtra && (
                   <div className="bg-gray-50 rounded-xl p-3 mb-2 flex flex-col gap-2">
                     <p className="text-xs text-gray-500 font-medium mb-1">Valores dos palpites extras</p>
@@ -549,6 +626,13 @@ export default function AdminPage() {
           </div>
         )}
       </div>
+
+      {confirmandoPlano && (
+        <div className="fixed top-0 left-0 right-0 bg-amber-500 text-white text-sm font-medium px-4 py-3 text-center z-50">
+          Confirmando pagamento do plano...
+        </div>
+      )}
+
       {toast && (
         <div className="fixed bottom-24 left-4 right-4 bg-gray-900 text-white text-sm font-medium px-4 py-3 rounded-2xl text-center z-50 shadow-lg">
           ✓ {toast}

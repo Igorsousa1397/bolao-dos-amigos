@@ -25,7 +25,7 @@ export async function POST(request: Request) {
   if (type !== 'payment') return NextResponse.json({ ok: true })
 
   const mpResponse = await fetch(`https://api.mercadopago.com/v1/payments/${data.id}`, {
-    headers: { 'Authorization': `Bearer ${process.env.MP_ACCESS_TOKEN}` }
+    headers: { 'Authorization': `Bearer ${process.env.MP_ACCESS_TOKEN_PLANO}` }
   })
   const payment = await mpResponse.json()
 
@@ -41,9 +41,10 @@ export async function POST(request: Request) {
       .eq('id', extraId)
   } else if (tipo === 'plano') {
     const bolaoId = payment.metadata?.bolao_id
-    if (novoStatus === 'aprovado') {
+    const novoPlano = Number(payment.metadata?.plano)
+    if (novoStatus === 'aprovado' && novoPlano) {
       await supabase.from('boloes')
-        .update({ status_plano: 'ativo' })
+        .update({ plano: novoPlano, status_plano: 'ativo' })
         .eq('id', bolaoId)
     }
   } else {

@@ -54,7 +54,7 @@ export async function POST(request: Request) {
         },
         auto_return: 'approved',
         notification_url: `${process.env.NEXT_PUBLIC_SITE_URL}/api/webhook`,
-        metadata: { user_id: user.id, bolao_id, tipo: 'plano' },
+        metadata: { user_id: user.id, bolao_id, tipo: 'plano', plano },
       }),
     })
 
@@ -64,7 +64,6 @@ export async function POST(request: Request) {
     if (!preference.id) return NextResponse.json({ error: 'Erro ao criar preferência' }, { status: 500 })
 
     await supabase.from('boloes').update({
-      plano,
       status_plano: 'pendente',
       mp_preference_id_plano: preference.id,
     }).eq('id', bolao_id)

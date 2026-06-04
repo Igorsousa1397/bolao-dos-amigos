@@ -11,7 +11,7 @@ export default function EntrarPage() {
   const supabase = createClient()
 
   const [bolao, setBolao] = useState<any>(null)
-  const [status, setStatus] = useState<'carregando' | 'encontrado' | 'ja_membro' | 'erro'>('carregando')
+  const [status, setStatus] = useState<'carregando' | 'encontrado' | 'ja_membro' | 'lotado' | 'erro'>('carregando')
   const [entrando, setEntrando] = useState(false)
 
   useEffect(() => {
@@ -44,13 +44,15 @@ export default function EntrarPage() {
 
       if (membro) { setStatus('ja_membro'); return }
 
-      // Usuário logado e não é membro — entra automaticamente
+      // Usuário logado e não é membro — tenta entrar (RPC valida limite)
       setEntrando(true)
-      const { error } = await supabase.from('bolao_membros').insert({
-        bolao_id: bolaoData.id, user_id: user.id,
-      })
-      if (error) { setEntrando(false); setStatus('encontrado'); return }
-
+      const { data: res, error } = await supabase.rpc('entrar_no_bolao', { p_codigo: codigo })
+      if (error || !res?.ok) {
+        setEntrando(false)
+        setStatus(res?.erro === 'lotado' ? 'lotado' : 'encontrado')
+        return
+      }
+      router.push('/palpites')
       await supabase.from('profiles').update({
         bolao_id: bolaoData.id,
         onboarding_completo: true,
@@ -64,23 +66,16 @@ export default function EntrarPage() {
   async function entrar() {
     setEntrando(true)
     const { data: { session } } = await supabase.auth.getSession()
-    const user = session?.user
-
-    if (!user) {
+    if (!session?.user) {
       router.push(`/login?convite=${codigo}`)
       return
     }
-
-    const { error } = await supabase.from('bolao_membros').insert({
-      bolao_id: bolao.id, user_id: user.id,
-    })
-    if (error && error.code !== '23505') { setEntrando(false); return }
-
-    await supabase.from('profiles').update({
-      bolao_id: bolao.id,
-      onboarding_completo: true,
-    }).eq('id', user.id)
-
+    const { data: res, error } = await supabase.rpc('entrar_no_bolao', { p_codigo: codigo })
+    if (error || !res?.ok) {
+      setEntrando(false)
+      if (res?.erro === 'lotado') setStatus('lotado')
+      return
+    }
     router.push('/palpites')
   }
 
@@ -103,6 +98,17 @@ export default function EntrarPage() {
           <div style={{ textAlign: 'center' }}>
             <p style={{ color: 'white', fontSize: '20px', fontWeight: 700, marginBottom: '8px' }}>Convite inválido</p>
             <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px', marginBottom: '24px' }}>Este link de convite não existe ou expirou.</p>
+            <button onClick={() => router.push('/login')}
+              style={{ background: '#1a6b3c', color: 'white', fontWeight: 600, padding: '14px 32px', borderRadius: '14px', fontSize: '15px', border: 'none', cursor: 'pointer' }}>
+              Ir para o início
+            </button>
+          </div>
+        )}
+
+        {status === 'lotado' && (
+          <div style={{ textAlign: 'center' }}>
+            <p style={{ color: 'white', fontSize: '20px', fontWeight: 700, marginBottom: '8px' }}>Bolão lotado</p>
+            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px', marginBottom: '24px' }}>Este bolão já atingiu o limite de participantes.</p>
             <button onClick={() => router.push('/login')}
               style={{ background: '#1a6b3c', color: 'white', fontWeight: 600, padding: '14px 32px', borderRadius: '14px', fontSize: '15px', border: 'none', cursor: 'pointer' }}>
               Ir para o início
