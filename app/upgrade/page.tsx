@@ -8,6 +8,8 @@ const PLANOS = [
   { plano: 15, valor: 30 },
   { plano: 30, valor: 60 },
   { plano: 45, valor: 90 },
+  { plano: 60, valor: 120 },
+  { plano: 75, valor: 150 }
 ]
 
 export default function UpgradePage() {

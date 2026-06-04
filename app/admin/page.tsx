@@ -292,9 +292,27 @@ export default function AdminPage() {
     setSalvando(null)
   }
 
-  async function aprovarPagamento(id: string) {
-    setSalvando(id)
-    await supabase.from('pagamentos').update({ status: 'aprovado', pago_em: new Date().toISOString() }).eq('id', id)
+  async function togglePagamento(p: any) {
+    const key = p.pagamento?.id || p.user_id
+    setSalvando(key)
+    const pago = p.pagamento?.status === 'aprovado'
+
+    if (p.pagamento?.id) {
+      // já existe registro — alterna aprovado <-> pendente
+      await supabase.from('pagamentos').update({
+        status: pago ? 'pendente' : 'aprovado',
+        pago_em: pago ? null : new Date().toISOString(),
+      }).eq('id', p.pagamento.id)
+    } else {
+      // sem registro — cria já aprovado
+      await supabase.from('pagamentos').insert({
+        user_id: p.user_id,
+        bolao_id: bolaoSelecionadoId,
+        valor: bolao?.valor_inscricao ?? 100,
+        status: 'aprovado',
+        pago_em: new Date().toISOString(),
+      })
+    }
     await loadPagamentos()
     setSalvando(null)
   }
@@ -450,17 +468,19 @@ export default function AdminPage() {
                     <p className="text-xs text-gray-400 truncate">{p.profiles?.email}</p>
                   </div>
                   <div className="flex-shrink-0 ml-2">
-                    {p.pagamento?.status === 'aprovado' ? (
-                      <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-medium">Pago</span>
-                    ) : p.pagamento?.status === 'pendente' ? (
-                      <button onClick={() => aprovarPagamento(p.pagamento.id)}
-                        disabled={salvando === p.pagamento.id}
-                        className="text-xs bg-amber-100 text-amber-700 px-3 py-1.5 rounded-full font-medium">
-                        {salvando === p.pagamento.id ? '...' : 'Aprovar'}
-                      </button>
-                    ) : (
-                      <span className="text-xs bg-gray-100 text-gray-400 px-2 py-1 rounded-full font-medium">Sem pagamento</span>
-                    )}
+                    {(() => {
+                      const pago = p.pagamento?.status === 'aprovado'
+                      const key = p.pagamento?.id || p.user_id
+                      return (
+                        <button onClick={() => togglePagamento(p)}
+                          disabled={salvando === key}
+                          className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors active:scale-95 ${
+                            pago ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+                          }`}>
+                          {salvando === key ? '...' : (pago ? '✓ Pago' : 'Marcar pago')}
+                        </button>
+                      )
+                    })()}
                   </div>
                 </div>
               </div>

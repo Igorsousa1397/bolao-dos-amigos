@@ -5,6 +5,8 @@ const PLANOS: Record<number, number> = {
   15: 30,
   30: 60,
   45: 90,
+  60: 120,
+  75: 150,
 }
 
 export async function POST(request: Request) {
