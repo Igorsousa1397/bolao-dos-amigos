@@ -45,6 +45,7 @@ const BANDEIRAS: Record<string, string> = {
   CRO:'🇭🇷',ROU:'🇷🇴',ALB:'🇦🇱',UKR:'🇺🇦',NZL:'🇳🇿',QAT:'🇶🇦', 
   SUI:'🇨🇭',CUW:'🇨🇼', CIV:'🇨🇮', TUN:'🇹🇳', CPV:'🇨🇻', ALG:'🇩🇿',
   NOR:'🇳🇴', RDC:'🇨🇩', GHA:'🇬🇭', UZB:'🇺🇿', SCO:'🏴󠁧󠁢󠁳󠁣󠁴󠁿', HTI:'🇭🇹',
+  CZE:'🇨🇿', BIH:'🇧🇦', SWE:'🇸🇪',
 }
 
 function GrupoData({ data, jogos, userId, pagou, onSalvo, habilitarExtra, valorExtra2, valorExtra3, valorExtra4 }: {
