@@ -121,10 +121,18 @@ function JogoCard({ jogo, userId, pagou, onSalvo, habilitarExtra, valorExtra2, v
   async function loadTodos() {
     if (palpitesTodos.length > 0) return
     setLoadingTodos(true)
+    // bolão do usuário — "Todos" deve mostrar só quem é do mesmo bolão
+    const { data: meuProfile } = await supabase
+      .from('profiles')
+      .select('bolao_id')
+      .eq('id', userId)
+      .single()
+    if (!meuProfile?.bolao_id) { setLoadingTodos(false); return }
     const { data } = await supabase
       .from('palpites')
       .select('user_id, gols_casa, gols_fora, pontos, profiles(nome)')
       .eq('jogo_id', jogo.id)
+      .eq('bolao_id', meuProfile.bolao_id)
     if (data) {
       setPalpitesTodos(data.map((p: any) => ({
         user_id: p.user_id,
