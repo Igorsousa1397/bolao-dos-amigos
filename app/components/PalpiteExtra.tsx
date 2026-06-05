@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, X, Clock } from 'lucide-react'
+import { Plus, X, Clock, Copy, Check } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 type Extra = {
@@ -13,12 +13,13 @@ type Extra = {
 }
 
 export default function PalpiteExtra({
-  jogoId, bolaoId, userId, extras, palpiteAberto, onPedido,
+  jogoId, bolaoId, userId, chavePix, extras, palpiteAberto, onPedido,
   valorExtra2 = 10, valorExtra3 = 15, valorExtra4 = 20,
 }: {
   jogoId: string
   bolaoId: string | null
   userId: string
+  chavePix?: string
   extras: Extra[]
   palpiteAberto: boolean
   onPedido?: () => void
@@ -32,6 +33,7 @@ export default function PalpiteExtra({
   const [fora, setFora] = useState('')
   const [processando, setProcessando] = useState(false)
   const [erro, setErro] = useState('')
+  const [pixCopiado, setPixCopiado] = useState(false)
   // cópia local para refletir o pedido na hora, sem recarregar tudo
   const [extrasLocais, setExtrasLocais] = useState<Extra[]>(extras)
 
@@ -77,6 +79,13 @@ export default function PalpiteExtra({
     setAberto(false)
     setProcessando(false)
     onPedido?.()
+  }
+
+  async function copiarPix() {
+    if (!chavePix) return
+    await navigator.clipboard.writeText(chavePix)
+    setPixCopiado(true)
+    setTimeout(() => setPixCopiado(false), 2000)
   }
 
   if (!palpiteAberto) return null
@@ -132,9 +141,22 @@ export default function PalpiteExtra({
               onChange={e => setFora(e.target.value)}
               className="w-12 h-12 text-center text-xl font-semibold border-2 border-green-300 rounded-xl outline-none focus:border-green-500 bg-white text-green-700" />
           </div>
-          <p className="text-xs text-gray-500 text-center mb-2">
-            Após confirmar, envie o comprovante de R$ {VALORES[proximoNumero]} ao admin pelo WhatsApp. O palpite vale após a aprovação.
-          </p>
+          <div className="bg-white rounded-lg border border-gray-200 p-2.5 mb-2">
+            <p className="text-xs text-gray-500 mb-1.5">
+              Pague <span className="font-semibold text-gray-700">R$ {VALORES[proximoNumero]}</span> via PIX e envie o comprovante ao admin. O palpite vale após a aprovação.
+            </p>
+            {chavePix ? (
+              <div className="flex items-center gap-2">
+                <span className="flex-1 text-xs text-gray-700 bg-gray-50 rounded-md px-2 py-1.5 break-all">{chavePix}</span>
+                <button onClick={copiarPix}
+                  className="flex items-center gap-1 text-xs font-semibold text-[#1a6b3c] border border-[#1a6b3c] rounded-md px-2.5 py-1.5 active:scale-95 transition-transform">
+                  {pixCopiado ? <><Check size={12} /> Copiado</> : <><Copy size={12} /> Copiar</>}
+                </button>
+              </div>
+            ) : (
+              <p className="text-xs text-amber-600">Chave PIX não configurada pelo admin.</p>
+            )}
+          </div>
           {erro && <p className="text-xs text-red-500 text-center mb-2">{erro}</p>}
           <button onClick={pedirExtra} disabled={processando || casa === '' || fora === ''}
             className="w-full bg-[#1a6b3c] text-white text-sm font-semibold py-2.5 rounded-xl disabled:opacity-40 active:scale-95 transition-transform">
