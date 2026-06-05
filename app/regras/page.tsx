@@ -5,12 +5,30 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { ArrowLeft, Trophy, Target, X, Plus, RefreshCw } from 'lucide-react'
 
+type LugarPremio = { lugar: number; pct: number }
+
+const PREMIACAO_PADRAO: LugarPremio[] = [
+  { lugar: 1, pct: 60 }, { lugar: 2, pct: 25 }, { lugar: 3, pct: 15 },
+]
+
+function medalhaLugar(lugar: number) {
+  if (lugar === 1) return '🥇'
+  if (lugar === 2) return '🥈'
+  if (lugar === 3) return '🥉'
+  return `${lugar}º`
+}
+
 export default function RegrasPage() {
   const router = useRouter()
   const supabase = createClient()
   const [habilitarOuro, setHabilitarOuro] = useState(true)
   const [habilitarExtra, setHabilitarExtra] = useState(true)
   const [habilitarAzarao, setHabilitarAzarao] = useState(true)
+  const [lugares, setLugares] = useState<LugarPremio[]>(PREMIACAO_PADRAO)
+  const [azaraoPct, setAzaraoPct] = useState(50)
+  const [valorExtra2, setValorExtra2] = useState(10)
+  const [valorExtra3, setValorExtra3] = useState(15)
+  const [valorExtra4, setValorExtra4] = useState(20)
 
   useEffect(() => {
     async function load() {
@@ -21,16 +39,27 @@ export default function RegrasPage() {
       if (!profile?.bolao_id) return
       const { data: bolao } = await supabase
         .from('boloes')
-        .select('habilitar_palpite_ouro, habilitar_palpite_extra, habilitar_azarao')
+        .select('habilitar_palpite_ouro, habilitar_palpite_extra, habilitar_azarao, premiacao, azarao_pct, valor_palpite_extra_2, valor_palpite_extra_3, valor_palpite_extra_4')
         .eq('id', profile.bolao_id).single()
       if (bolao) {
         setHabilitarOuro(bolao.habilitar_palpite_ouro ?? true)
         setHabilitarExtra(bolao.habilitar_palpite_extra ?? true)
         setHabilitarAzarao(bolao.habilitar_azarao ?? true)
+        if (Array.isArray(bolao.premiacao) && bolao.premiacao.length > 0) {
+          setLugares([...bolao.premiacao].sort((a: any, b: any) => a.lugar - b.lugar))
+        }
+        if (bolao.azarao_pct != null) setAzaraoPct(Number(bolao.azarao_pct))
+        setValorExtra2(Number(bolao.valor_palpite_extra_2 ?? 10))
+        setValorExtra3(Number(bolao.valor_palpite_extra_3 ?? 15))
+        setValorExtra4(Number(bolao.valor_palpite_extra_4 ?? 20))
       }
     }
     load()
   }, [])
+
+  function fmtReal(v: number) {
+    return `R$ ${v.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -91,15 +120,15 @@ export default function RegrasPage() {
             </div>
             <div className="flex items-center justify-between py-2.5 px-3 bg-gray-50 rounded-xl">
               <span className="text-sm text-gray-700">2º palpite</span>
-              <span className="text-sm font-semibold text-gray-700">R$ 10,00</span>
+              <span className="text-sm font-semibold text-gray-700">{fmtReal(valorExtra2)}</span>
             </div>
             <div className="flex items-center justify-between py-2.5 px-3 bg-gray-50 rounded-xl">
               <span className="text-sm text-gray-700">3º palpite</span>
-              <span className="text-sm font-semibold text-gray-700">R$ 15,00</span>
+              <span className="text-sm font-semibold text-gray-700">{fmtReal(valorExtra3)}</span>
             </div>
             <div className="flex items-center justify-between py-2.5 px-3 bg-gray-50 rounded-xl">
               <span className="text-sm text-gray-700">4º palpite</span>
-              <span className="text-sm font-semibold text-gray-700">R$ 20,00</span>
+              <span className="text-sm font-semibold text-gray-700">{fmtReal(valorExtra4)}</span>
             </div>
           </div>
         </div>
@@ -124,25 +153,21 @@ export default function RegrasPage() {
             </div>
             <h2 className="font-semibold text-gray-800">Premiação</h2>
           </div>
-          <p className="text-sm text-gray-500 mb-4">O valor arrecadado menos R$ 50 (azarão) é distribuído entre os 3 primeiros. O último colocado leva o prêmio azarão de R$ 50.</p>
+          <p className="text-sm text-gray-500 mb-4">
+            O valor arrecadado{habilitarAzarao ? `, menos o prêmio do azarão (${azaraoPct}% da inscrição),` : ''} é distribuído entre os {lugares.length === 1 ? 'premiados' : `${lugares.length} primeiros`} colocados{habilitarAzarao ? '. O último colocado leva o prêmio do azarão' : ''}.
+          </p>
           <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between py-2.5 px-3 bg-yellow-50 rounded-xl">
-              <span className="text-sm font-medium text-gray-700">🥇 1º lugar</span>
-              <span className="text-sm font-bold text-yellow-700">60% do total</span>
-            </div>
-            <div className="flex items-center justify-between py-2.5 px-3 bg-gray-50 rounded-xl">
-              <span className="text-sm font-medium text-gray-700">🥈 2º lugar</span>
-              <span className="text-sm font-bold text-gray-600">25% do total</span>
-            </div>
-            <div className="flex items-center justify-between py-2.5 px-3 bg-gray-50 rounded-xl">
-              <span className="text-sm font-medium text-gray-700">🥉 3º lugar</span>
-              <span className="text-sm font-bold text-gray-600">15% do total</span>
-            </div>
+            {lugares.map((l, i) => (
+              <div key={l.lugar} className={`flex items-center justify-between py-2.5 px-3 rounded-xl ${i === 0 ? 'bg-yellow-50' : 'bg-gray-50'}`}>
+                <span className="text-sm font-medium text-gray-700">{medalhaLugar(l.lugar)} {l.lugar}º lugar</span>
+                <span className={`text-sm font-bold ${i === 0 ? 'text-yellow-700' : 'text-gray-600'}`}>{l.pct}% do total</span>
+              </div>
+            ))}
           </div>
           {habilitarAzarao && (
             <div className="flex items-center justify-between py-2.5 px-3 bg-orange-50 rounded-xl mt-2">
               <span className="text-sm font-medium text-gray-700">🃏 Último lugar (Azarão)</span>
-              <span className="text-sm font-bold text-orange-600">R$ 50 fixo</span>
+              <span className="text-sm font-bold text-orange-600">{azaraoPct}% da inscrição</span>
             </div>
           )}
         </div>
