@@ -26,9 +26,19 @@ export default function RankingPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
+      // bolão do jogador — ranking é só deste bolão
+      const { data: meuProfile } = await supabase
+        .from('profiles')
+        .select('bolao_id')
+        .eq('id', user.id)
+        .single()
+
+      if (!meuProfile?.bolao_id) { setCarregando(false); return }
+
       const { data } = await supabase
         .from('ranking')
         .select('*')
+        .eq('bolao_id', meuProfile.bolao_id)
         .order('posicao')
 
       if (!data) return
@@ -47,8 +57,6 @@ export default function RankingPage() {
         sou_eu: r.user_id === user.id,
         avatar_url: avatarMap[r.user_id] || null,
       }))
-
-      console.log('avatars:', comEu.map(r => ({ nome: r.nome, avatar_url: r.avatar_url })))
 
       setRanking(comEu)
       setMinha(comEu.find((r: any) => r.user_id === user.id) || null)
