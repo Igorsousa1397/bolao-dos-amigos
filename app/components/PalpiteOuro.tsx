@@ -15,8 +15,9 @@ const BANDEIRAS: Record<string, string> = {
   JPN:'🇯🇵',KOR:'🇰🇷',AUS:'🇦🇺',IDN:'🇮🇩',IRN:'🇮🇷',KSA:'🇸🇦',
   IRQ:'🇮🇶',JOR:'🇯🇴',TUR:'🇹🇷',AUT:'🇦🇹',DEN:'🇩🇰',SRB:'🇷🇸',
   CRO:'🇭🇷',ROU:'🇷🇴',ALB:'🇦🇱',UKR:'🇺🇦',NZL:'🇳🇿',QAT:'🇶🇦', 
-  SUI:'🇨🇭', CUW:'🇨🇼', CIV:'🇨🇮', TUN:'🇹🇳', CPV:'🇨🇻', 
-  ALG:'🇩🇿', NOR:'🇳🇴', RDC:'🇨🇩', GHA:'🇬🇭', UZB:'🇺🇿', SCO:'🏴󠁧󠁢󠁳󠁣󠁴󠁿', HTI:'🇭🇹', 
+  SUI:'🇨🇭',CUW:'🇨🇼', CIV:'🇨🇮', TUN:'🇹🇳', CPV:'🇨🇻', ALG:'🇩🇿',
+  NOR:'🇳🇴', RDC:'🇨🇩', GHA:'🇬🇭', UZB:'🇺🇿', SCO:'🏴󠁧󠁢󠁳󠁣󠁴󠁿', HTI:'🇭🇹',
+  CZE:'🇨🇿', BIH:'🇧🇦', SWE:'🇸🇪',
 }
 
 export default function PalpiteOuro({ userId, pagou }: { userId: string; pagou: boolean }) {
