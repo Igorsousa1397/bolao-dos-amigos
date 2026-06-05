@@ -42,6 +42,8 @@ export default function Premiacao({
 }: PremiacaoProps) {
   const supabase = createClient()
   const [total, setTotal] = useState(0)
+  const [totalInscricoes, setTotalInscricoes] = useState(0)
+  const [totalExtras, setTotalExtras] = useState(0)
   const [participantes, setParticipantes] = useState(0)
   const [lugares, setLugares] = useState<LugarPremio[]>(PREMIACAO_PADRAO)
   const [azaraoPct, setAzaraoPct] = useState(50)
@@ -74,6 +76,8 @@ export default function Premiacao({
       const userIds = (membros || []).map((m: any) => m.user_id)
       if (userIds.length === 0) {
         setParticipantes(0)
+        setTotalInscricoes(0)
+        setTotalExtras(0)
         setTotal(0)
         return
       }
@@ -85,8 +89,20 @@ export default function Premiacao({
         .in('user_id', userIds)
 
       const qtd = count || 0
+      const inscricoes = qtd * valorInscricao
+
+      // soma dos palpites extras APROVADOS deste bolão
+      const { data: extras } = await supabase
+        .from('palpites_extras')
+        .select('valor_pago')
+        .eq('bolao_id', bolaoId)
+        .eq('status_pagamento', 'aprovado')
+      const somaExtras = (extras || []).reduce((s: number, e: any) => s + (Number(e.valor_pago) || 0), 0)
+
       setParticipantes(qtd)
-      setTotal(qtd * valorInscricao)
+      setTotalInscricoes(inscricoes)
+      setTotalExtras(somaExtras)
+      setTotal(inscricoes + somaExtras)
     }
     load()
   }, [bolaoId, valorInscricao])
@@ -153,10 +169,27 @@ export default function Premiacao({
 
       {/* Resumo */}
       <div className="border-t border-gray-50 pt-3 flex flex-col gap-1.5">
-        <div className="flex justify-between text-xs text-gray-400">
-          <span>Total arrecadado</span>
-          <span className="font-medium text-gray-600">{fmt(total)}</span>
-        </div>
+        {totalExtras > 0 ? (
+          <>
+            <div className="flex justify-between text-xs text-gray-400">
+              <span>Inscrições</span>
+              <span className="font-medium text-gray-600">{fmt(totalInscricoes)}</span>
+            </div>
+            <div className="flex justify-between text-xs text-gray-400">
+              <span>Palpites extras</span>
+              <span className="font-medium text-gray-600">{fmt(totalExtras)}</span>
+            </div>
+            <div className="flex justify-between text-xs text-gray-500 pt-1 border-t border-gray-50">
+              <span>Total arrecadado</span>
+              <span className="font-medium text-gray-700">{fmt(total)}</span>
+            </div>
+          </>
+        ) : (
+          <div className="flex justify-between text-xs text-gray-400">
+            <span>Total arrecadado</span>
+            <span className="font-medium text-gray-600">{fmt(total)}</span>
+          </div>
+        )}
         {habilitarAzarao && (
           <div className="flex justify-between text-xs text-gray-400">
             <span>Azarão ({azaraoPct}% da inscrição)</span>
