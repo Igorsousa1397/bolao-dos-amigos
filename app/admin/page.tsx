@@ -706,7 +706,7 @@ export default function AdminPage() {
                 <div className="flex items-center justify-between py-3">
                   <div>
                     <p className="text-sm font-medium text-gray-800">Azarão</p>
-                    <p className="text-xs text-gray-400">R$ 50 fixo para o último lugar</p>
+                    <p className="text-xs text-gray-400">% da inscrição para o último lugar (ajuste acima)</p>
                   </div>
                   <button onClick={() => setHabilitarAzarao(!habilitarAzarao)}
                     className={`w-11 h-6 rounded-full relative transition-colors flex-shrink-0 ${habilitarAzarao ? 'bg-green-500' : 'bg-gray-200'}`}>
