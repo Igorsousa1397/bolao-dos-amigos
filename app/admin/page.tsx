@@ -159,7 +159,7 @@ export default function AdminPage() {
       if (!profile?.is_admin) { router.push('/palpites'); return }
 
       const { data: boloesData } = await supabase
-        .from('boloes').select('id, nome').eq('admin_id', user.id).order('created_at')
+        .from('boloes').select('id, nome').or(`admin_id.eq.${user.id},admins_extras.cs.{${user.id}}`).order('created_at')
       if (boloesData && boloesData.length > 0) {
         setBoloes(boloesData)
         setBolaoSelecionadoId(boloesData[0].id)
