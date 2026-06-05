@@ -48,8 +48,8 @@ const BANDEIRAS: Record<string, string> = {
   CZE:'🇨🇿', BIH:'🇧🇦', SWE:'🇸🇪',
 }
 
-function GrupoData({ data, jogos, userId, pagou, onSalvo, habilitarExtra, valorExtra2, valorExtra3, valorExtra4 }: {
-  data: string; jogos: Jogo[]; userId: string; pagou: boolean; habilitarExtra: boolean
+function GrupoData({ data, jogos, userId, bolaoId, pagou, onSalvo, habilitarExtra, valorExtra2, valorExtra3, valorExtra4 }: {
+  data: string; jogos: Jogo[]; userId: string; bolaoId: string | null; pagou: boolean; habilitarExtra: boolean
   valorExtra2: number; valorExtra3: number; valorExtra4: number
   onSalvo: (id: string, casa: number, fora: number) => void
 }){
@@ -72,15 +72,15 @@ function GrupoData({ data, jogos, userId, pagou, onSalvo, habilitarExtra, valorE
       </button>
 
       {aberto && jogos.map(j => (
-        <JogoCard key={j.id} jogo={j} userId={userId} pagou={pagou} onSalvo={onSalvo} 
+        <JogoCard key={j.id} jogo={j} userId={userId} bolaoId={bolaoId} pagou={pagou} onSalvo={onSalvo} 
           habilitarExtra={habilitarExtra} valorExtra2={valorExtra2} valorExtra3={valorExtra3} valorExtra4={valorExtra4} />
       ))}
     </div>
   )
 }
 
-function JogoCard({ jogo, userId, pagou, onSalvo, habilitarExtra, valorExtra2, valorExtra3, valorExtra4 }: {
-  jogo: Jogo; userId: string; pagou: boolean; habilitarExtra: boolean
+function JogoCard({ jogo, userId, bolaoId, pagou, onSalvo, habilitarExtra, valorExtra2, valorExtra3, valorExtra4 }: {
+  jogo: Jogo; userId: string; bolaoId: string | null; pagou: boolean; habilitarExtra: boolean
   valorExtra2: number; valorExtra3: number; valorExtra4: number
   onSalvo: (id: string, casa: number, fora: number) => void
 }) {
@@ -329,9 +329,11 @@ function JogoCard({ jogo, userId, pagou, onSalvo, habilitarExtra, valorExtra2, v
 
       {habilitarExtra && <PalpiteExtra
         jogoId={jogo.id}
+        bolaoId={bolaoId}
+        userId={userId}
         extras={jogo.extras || []}
         palpiteAberto={jogo.palpite_aberto && pagou}
-        onPago={() => {}}
+        onPedido={() => {}}
         valorExtra2={valorExtra2}
         valorExtra3={valorExtra3}
         valorExtra4={valorExtra4}
@@ -347,6 +349,7 @@ export default function PalpitesPage() {
   const [fasesLiberadas, setFasesLiberadas] = useState<string[]>([])
   const [jogos, setJogos] = useState<Jogo[]>([])
   const [userId, setUserId] = useState<string | null>(null)
+  const [meuBolaoId, setMeuBolaoId] = useState<string | null>(null)
   const [pagou, setPagou] = useState(false)
   const [carregando, setCarregando] = useState(true)
   const [dropdownAberto, setDropdownAberto] = useState(false)
@@ -371,6 +374,7 @@ export default function PalpitesPage() {
 
       let bolaoConfig: any = { nome: '', habilitar_palpite_extra: true, habilitar_palpite_ouro: true, valor_palpite_extra_2: 10, valor_palpite_extra_3: 15, valor_palpite_extra_4: 20 }
       if (profileData?.bolao_id) {
+        setMeuBolaoId(profileData.bolao_id)
         const { data: bolao } = await supabase
             .from('boloes')
 .select('nome, habilitar_palpite_extra, habilitar_palpite_ouro, valor_palpite_extra_2, valor_palpite_extra_3, valor_palpite_extra_4')            .eq('id', profileData.bolao_id)
@@ -531,7 +535,7 @@ export default function PalpitesPage() {
           }, {} as Record<string, Jogo[]>)
 
           return Object.entries(grupos).map(([data, jogosData]) => (
-            <GrupoData key={data} data={data} jogos={jogosData} userId={userId!} pagou={pagou} onSalvo={onSalvo} 
+            <GrupoData key={data} data={data} jogos={jogosData} userId={userId!} bolaoId={meuBolaoId} pagou={pagou} onSalvo={onSalvo} 
               habilitarExtra={habilitarExtra} valorExtra2={valorExtra2} valorExtra3={valorExtra3} valorExtra4={valorExtra4} />
           ))
         })()}

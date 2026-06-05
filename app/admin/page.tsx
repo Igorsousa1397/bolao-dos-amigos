@@ -122,7 +122,7 @@ function GrupoData({ data, jogos, resultado, setResultado, salvando, salvarResul
 export default function AdminPage() {
   const supabase = createClient()
   const router = useRouter()
-  const [aba, setAba] = useState<'fases' | 'jogos' | 'pagamentos' | 'bolao'>('fases')
+  const [aba, setAba] = useState<'fases' | 'jogos' | 'pagamentos' | 'extras' | 'bolao'>('fases')
   const [boloes, setBoloes] = useState<any[]>([])
   const [bolaoSelecionadoId, setBolaoSelecionadoId] = useState<string | null>(null)
   const [dropdownBolaoAberto, setDropdownBolaoAberto] = useState(false)
@@ -154,6 +154,8 @@ export default function AdminPage() {
   ])
   const [azaraoPct, setAzaraoPct] = useState('50')
   const MAX_LUGARES = 5
+  const [extrasPedidos, setExtrasPedidos] = useState<any[]>([])
+  const [expandidoExtra, setExpandidoExtra] = useState<string | null>(null)
 
   useEffect(() => {
     async function verificarAdmin() {
@@ -216,6 +218,52 @@ export default function AdminPage() {
     setPagamentos((data || []).map((m: any) => ({ ...m, pagamento: pagsMap[m.user_id] || null })) as any)
   }
 
+  async function loadExtras() {
+    if (!bolaoSelecionadoId) return
+    // pedidos de palpite extra deste bolão
+    const { data, error } = await supabase
+      .from('palpites_extras')
+      .select('id, user_id, jogo_id, numero, gols_casa, gols_fora, valor_pago, status_pagamento, created_at')
+      .eq('bolao_id', bolaoSelecionadoId)
+      .order('created_at', { ascending: false })
+    if (error) { console.error('erro extras:', error); return }
+    const lista = data || []
+
+    // nomes dos usuários
+    const userIds = [...new Set(lista.map((e: any) => e.user_id))]
+    const { data: profs } = await supabase.from('profiles').select('id, nome, email').in('id', userIds)
+    const profMap: Record<string, any> = {}
+    ;(profs || []).forEach((p: any) => { profMap[p.id] = p })
+
+    // nomes dos jogos (times)
+    const jogoIds = [...new Set(lista.map((e: any) => e.jogo_id))]
+    const { data: jogosData } = await supabase
+      .from('jogos').select('id, time_casa_id, time_fora_id').in('id', jogoIds)
+    const timeIds = [...new Set([...(jogosData || []).map((j: any) => j.time_casa_id), ...(jogosData || []).map((j: any) => j.time_fora_id)])]
+    const { data: times } = await supabase.from('times').select('id, nome').in('id', timeIds)
+    const timeMap: Record<string, string> = {}
+    ;(times || []).forEach((t: any) => { timeMap[t.id] = t.nome })
+    const jogoMap: Record<string, string> = {}
+    ;(jogosData || []).forEach((j: any) => { jogoMap[j.id] = `${timeMap[j.time_casa_id] || '?'} × ${timeMap[j.time_fora_id] || '?'}` })
+
+    setExtrasPedidos(lista.map((e: any) => ({
+      ...e,
+      nome: profMap[e.user_id]?.nome || 'Usuário',
+      email: profMap[e.user_id]?.email || '',
+      jogoLabel: jogoMap[e.jogo_id] || 'Jogo',
+    })))
+  }
+
+  async function toggleExtra(e: any) {
+    setSalvando(e.id)
+    const aprovado = e.status_pagamento === 'aprovado'
+    await supabase.from('palpites_extras').update({
+      status_pagamento: aprovado ? 'pendente' : 'aprovado',
+    }).eq('id', e.id)
+    await loadExtras()
+    setSalvando(null)
+  }
+
   async function loadBolao() {
     if (!bolaoSelecionadoId) return
     const { data } = await supabase.from('boloes').select('*').eq('id', bolaoSelecionadoId).single()
@@ -251,6 +299,7 @@ export default function AdminPage() {
     loadBolao()
     if (aba === 'jogos') loadJogos(faseJogos)
     if (aba === 'pagamentos') loadPagamentos()
+    if (aba === 'extras') loadExtras()
   }, [aba, faseJogos, bolaoSelecionadoId])
 
   // Confirma upgrade de plano ao voltar do Mercado Pago
@@ -407,12 +456,12 @@ export default function AdminPage() {
         )}
 
         <div className="flex">
-          {(['fases', 'jogos', 'pagamentos', 'bolao'] as const).map(a => (
+          {(['fases', 'jogos', 'pagamentos', 'extras', 'bolao'] as const).map(a => (
             <button key={a} onClick={() => setAba(a)}
-              className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors text-center ${
+              className={`flex-1 py-3 text-xs font-medium border-b-2 transition-colors text-center ${
                 aba === a ? 'border-white text-white' : 'border-transparent text-white/50'
               }`}>
-              {a === 'fases' ? 'Fases' : a === 'jogos' ? 'Jogos' : a === 'pagamentos' ? 'Participantes' : 'Bolão'}
+              {a === 'fases' ? 'Fases' : a === 'jogos' ? 'Jogos' : a === 'pagamentos' ? 'Inscrições' : a === 'extras' ? 'Extras' : 'Bolão'}
             </button>
           ))}
         </div>
@@ -502,6 +551,69 @@ export default function AdminPage() {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {aba === 'extras' && (
+          <div className="flex flex-col gap-3">
+            {extrasPedidos.length === 0 ? (
+              <p className="text-center text-gray-400 py-8 text-sm">Nenhum palpite extra solicitado</p>
+            ) : (
+              <>
+                <p className="text-xs text-gray-400 px-1">
+                  {extrasPedidos.filter(e => e.status_pagamento === 'pendente').length} pendente(s) de aprovação
+                </p>
+                {extrasPedidos.map(e => {
+                  const aprovado = e.status_pagamento === 'aprovado'
+                  const expandido = expandidoExtra === e.id
+                  return (
+                    <div key={e.id} className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+                      <button onClick={() => setExpandidoExtra(expandido ? null : e.id)}
+                        className="w-full flex items-center justify-between px-4 py-3.5">
+                        <div className="min-w-0 text-left">
+                          <p className="text-sm font-medium text-gray-800 truncate">{e.nome}</p>
+                          <p className="text-xs text-gray-400 truncate">Palpite #{e.numero} · {e.jogoLabel}</p>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${aprovado ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
+                            {aprovado ? '✓ Pago' : 'Pendente'}
+                          </span>
+                          <ChevronDown size={16} className={`text-gray-400 transition-transform ${expandido ? 'rotate-180' : ''}`} />
+                        </div>
+                      </button>
+                      {expandido && (
+                        <div className="px-4 pb-4 border-t border-gray-50 pt-3">
+                          <div className="flex flex-col gap-2 mb-3">
+                            <div className="flex justify-between text-xs">
+                              <span className="text-gray-400">E-mail</span>
+                              <span className="text-gray-600">{e.email}</span>
+                            </div>
+                            <div className="flex justify-between text-xs">
+                              <span className="text-gray-400">Jogo</span>
+                              <span className="text-gray-600">{e.jogoLabel}</span>
+                            </div>
+                            <div className="flex justify-between text-xs">
+                              <span className="text-gray-400">Palpite</span>
+                              <span className="text-gray-800 font-semibold">{e.gols_casa} × {e.gols_fora}</span>
+                            </div>
+                            <div className="flex justify-between text-xs">
+                              <span className="text-gray-400">Valor</span>
+                              <span className="text-gray-600">R$ {Number(e.valor_pago || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                            </div>
+                          </div>
+                          <button onClick={() => toggleExtra(e)} disabled={salvando === e.id}
+                            className={`w-full text-sm font-semibold py-2.5 rounded-xl active:scale-95 transition-transform disabled:opacity-40 ${
+                              aprovado ? 'bg-gray-100 text-gray-600' : 'bg-[#1a6b3c] text-white'
+                            }`}>
+                            {salvando === e.id ? '...' : (aprovado ? 'Marcar como pendente' : 'Aprovar pagamento')}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </>
+            )}
           </div>
         )}
 
