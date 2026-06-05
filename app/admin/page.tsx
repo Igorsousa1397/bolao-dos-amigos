@@ -149,6 +149,11 @@ export default function AdminPage() {
   const [valorExtra3, setValorExtra3] = useState('15')
   const [valorExtra4, setValorExtra4] = useState('20')
   const [confirmandoPlano, setConfirmandoPlano] = useState(false)
+  const [lugares, setLugares] = useState<{ lugar: number; pct: number }[]>([
+    { lugar: 1, pct: 60 }, { lugar: 2, pct: 25 }, { lugar: 3, pct: 15 },
+  ])
+  const [azaraoPct, setAzaraoPct] = useState('50')
+  const MAX_LUGARES = 5
 
   useEffect(() => {
     async function verificarAdmin() {
@@ -159,7 +164,9 @@ export default function AdminPage() {
       if (!profile?.is_admin) { router.push('/palpites'); return }
 
       const { data: boloesData } = await supabase
-        .from('boloes').select('id, nome').or(`admin_id.eq.${user.id},admins_extras.cs.{${user.id}}`).order('created_at')
+        .from('boloes').select('id, nome')
+        .or(`admin_id.eq.${user.id},admins_extras.cs.{${user.id}}`)
+        .order('created_at')
       if (boloesData && boloesData.length > 0) {
         setBoloes(boloesData)
         setBolaoSelecionadoId(boloesData[0].id)
@@ -223,6 +230,12 @@ export default function AdminPage() {
       setValorExtra2((data.valor_palpite_extra_2 ?? 10).toString())
       setValorExtra3((data.valor_palpite_extra_3 ?? 15).toString())
       setValorExtra4((data.valor_palpite_extra_4 ?? 20).toString())
+      if (Array.isArray(data.premiacao) && data.premiacao.length > 0) {
+        setLugares([...data.premiacao].sort((a: any, b: any) => a.lugar - b.lugar))
+      } else {
+        setLugares([{ lugar: 1, pct: 60 }, { lugar: 2, pct: 25 }, { lugar: 3, pct: 15 }])
+      }
+      setAzaraoPct((data.azarao_pct ?? 50).toString())
     }
 
     const { count } = await supabase
@@ -331,6 +344,8 @@ export default function AdminPage() {
       valor_palpite_extra_2: Number(valorExtra2),
       valor_palpite_extra_3: Number(valorExtra3),
       valor_palpite_extra_4: Number(valorExtra4),
+      premiacao: lugares.map(l => ({ lugar: l.lugar, pct: Number(l.pct) || 0 })),
+      azarao_pct: Number(azaraoPct) || 0,
     }).eq('id', bolao.id)
     await loadBolao()
     setSalvandoBolao(false)
@@ -564,6 +579,61 @@ export default function AdminPage() {
                   )}
                 </div>
               )}
+            </div>
+
+            <div className="bg-white rounded-2xl border border-gray-100 p-5">
+              <h3 className="font-semibold text-gray-800 mb-1">Premiação</h3>
+              <p className="text-xs text-gray-400 mb-4">Defina os lugares premiados e a % de cada um (do total arrecadado)</p>
+
+              <div className="flex flex-col gap-2">
+                {lugares.map((l, idx) => (
+                  <div key={l.lugar} className="flex items-center gap-2">
+                    <span className="text-sm text-gray-600 w-16">{l.lugar}º lugar</span>
+                    <div className="flex items-center gap-1 flex-1">
+                      <input type="number" min="0" max="100" value={l.pct}
+                        onChange={e => setLugares(prev => prev.map((x, i) => i === idx ? { ...x, pct: Number(e.target.value) } : x))}
+                        className="w-20 text-center text-sm font-semibold border border-gray-200 rounded-lg px-2 py-1.5 outline-none focus:border-green-500 text-gray-800" />
+                      <span className="text-xs text-gray-400">%</span>
+                    </div>
+                    {lugares.length > 1 && (
+                      <button onClick={() => setLugares(prev => prev.filter((_, i) => i !== idx).map((x, i) => ({ ...x, lugar: i + 1 })))}
+                        className="text-xs text-red-500 px-2 py-1 rounded-lg hover:bg-red-50">Remover</button>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {lugares.length < MAX_LUGARES && (
+                <button onClick={() => setLugares(prev => [...prev, { lugar: prev.length + 1, pct: 0 }])}
+                  className="mt-2 text-sm text-[#1a6b3c] font-medium px-2 py-1.5 rounded-lg hover:bg-green-50">
+                  + Adicionar lugar
+                </button>
+              )}
+
+              {(() => {
+                const soma = lugares.reduce((s, l) => s + (Number(l.pct) || 0), 0)
+                return (
+                  <p className={`text-xs mt-2 ${soma === 100 ? 'text-green-600' : 'text-amber-600'}`}>
+                    Soma atual: {soma}% {soma === 100 ? '✓' : '(o ideal é somar 100%)'}
+                  </p>
+                )
+              })()}
+
+              <div className="border-t border-gray-50 mt-4 pt-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-600 flex-1">Azarão (% da inscrição)</span>
+                  <input type="number" min="0" max="100" value={azaraoPct}
+                    onChange={e => setAzaraoPct(e.target.value)}
+                    className="w-20 text-center text-sm font-semibold border border-gray-200 rounded-lg px-2 py-1.5 outline-none focus:border-green-500 text-gray-800" />
+                  <span className="text-xs text-gray-400">%</span>
+                </div>
+                <p className="text-xs text-gray-400 mt-1">Descontado do total e pago a quem ficar em último (se o azarão estiver ativo)</p>
+              </div>
+
+              <button onClick={salvarBolao} disabled={salvandoBolao}
+                className="w-full mt-4 bg-[#1a6b3c] text-white font-semibold py-3 rounded-xl text-sm disabled:opacity-40 active:scale-95 transition-transform">
+                {salvandoBolao ? 'Salvando...' : 'Salvar premiação'}
+              </button>
             </div>
 
             <div className="bg-white rounded-2xl border border-gray-100 p-5">
