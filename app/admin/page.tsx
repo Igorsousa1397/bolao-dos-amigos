@@ -39,6 +39,7 @@ const BANDEIRAS: Record<string, string> = {
   QAT:'🇶🇦',SUI:'🇨🇭',CUW:'🇨🇼',CIV:'🇨🇮',TUN:'🇹🇳',
   CPV:'🇨🇻',ALG:'🇩🇿',NOR:'🇳🇴',RDC:'🇨🇩',GHA:'🇬🇭',
   UZB:'🇺🇿',SCO:'🏴󠁧󠁢󠁳󠁣󠁴󠁿',HTI:'🇭🇹',
+  CZE:'🇨🇿',BIH:'🇧🇦',SWE:'🇸🇪',
 }
 
 function GrupoData({ data, jogos, resultado, setResultado, salvando, salvarResultado }: {
@@ -358,6 +359,7 @@ export default function AdminPage() {
   )
 
   const limiteAtingido = totalMembros >= (bolao?.plano || 5)
+  const planoGratuito = (bolao?.plano || 5) <= 5
 
   return (
     <div>
@@ -519,35 +521,48 @@ export default function AdminPage() {
             </div>
 
             <div className="bg-white rounded-2xl border border-gray-100 p-5">
-              <h3 className="font-semibold text-gray-800 mb-1">Link de convite</h3>
+              <div className="flex items-center justify-between mb-1">
+                <h3 className="font-semibold text-gray-800">Link de convite</h3>
+                {bolao && (planoGratuito ? (
+                  <span className="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full font-medium">Plano gratuito · até 5</span>
+                ) : (
+                  <span className="text-xs bg-green-100 text-green-700 px-2.5 py-1 rounded-full font-medium">Plano pago · até {bolao.plano}</span>
+                ))}
+              </div>
               <p className="text-xs text-gray-400 mb-2">Compartilhe para convidar participantes</p>
               <p className="text-xs text-gray-400 mb-4">
                 {totalMembros}/{bolao?.plano || 5} participantes
               </p>
               {bolao && (
-                <>
-                  {!limiteAtingido && (
-                    <div className="bg-gray-50 rounded-xl px-4 py-3 text-sm text-gray-600 break-all mb-3">
-                      {typeof window !== 'undefined' ? `${window.location.origin}/entrar/${bolao.codigo_convite}` : ''}
+                <div className="flex flex-col gap-2">
+                  {!limiteAtingido ? (
+                    <>
+                      <div className="bg-gray-50 rounded-xl px-4 py-3 text-sm text-gray-600 break-all mb-1">
+                        {typeof window !== 'undefined' ? `${window.location.origin}/entrar/${bolao.codigo_convite}` : ''}
+                      </div>
+                      <button onClick={copiarLink}
+                        className="w-full flex items-center justify-center gap-2 border border-[#1a6b3c] text-[#1a6b3c] font-semibold py-3 rounded-xl text-sm active:scale-95 transition-transform">
+                        {copiado ? <><Check size={14} /> Copiado!</> : <><Copy size={14} /> Copiar link de convite</>}
+                      </button>
+                    </>
+                  ) : (
+                    <div className="bg-amber-50 border border-amber-100 rounded-xl px-4 py-3 text-sm text-amber-700 text-center mb-1">
+                      Bolão lotado! Limite de {bolao.plano} participantes atingido.
                     </div>
                   )}
-                  {limiteAtingido ? (
-                    <div className="flex flex-col gap-2">
-                      <div className="bg-amber-50 border border-amber-100 rounded-xl px-4 py-3 text-sm text-amber-700 text-center mb-1">
-                        Bolão lotado! Limite de {bolao?.plano || 5} participantes atingido.
-                      </div>
-                      <button onClick={() => router.push('/upgrade')}
-                        className="w-full flex items-center justify-center gap-2 bg-amber-500 text-white font-semibold py-3 rounded-xl text-sm active:scale-95 transition-transform">
-                        🚀 Fazer upgrade do plano
-                      </button>
-                    </div>
-                  ) : (
-                    <button onClick={copiarLink}
-                      className="w-full flex items-center justify-center gap-2 border border-[#1a6b3c] text-[#1a6b3c] font-semibold py-3 rounded-xl text-sm active:scale-95 transition-transform">
-                      {copiado ? <><Check size={14} /> Copiado!</> : <><Copy size={14} /> Copiar link de convite</>}
+
+                  {planoGratuito && (
+                    <button onClick={() => router.push('/upgrade')}
+                      className="w-full flex items-center justify-center gap-2 bg-amber-500 text-white font-semibold py-3 rounded-xl text-sm active:scale-95 transition-transform">
+                      🚀 Fazer upgrade do plano
                     </button>
                   )}
-                </>
+                  {planoGratuito && !limiteAtingido && (
+                    <p className="text-xs text-gray-400 text-center">
+                      Você pode aumentar o limite quando quiser, sem esperar lotar.
+                    </p>
+                  )}
+                </div>
               )}
             </div>
 
