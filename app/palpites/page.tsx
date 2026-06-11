@@ -446,7 +446,7 @@ export default function PalpitesPage() {
         time_fora: timesMap[j.time_fora_id],
         palpite: palpiteMap[j.id] || null,
         extras: extrasMap[j.id] || [],  // ← adiciona extras
-        palpite_aberto: new Date(j.data_hora) > new Date(agora.getTime() + 24 * 60 * 60 * 1000) && j.status === 'agendado',
+        palpite_aberto: new Date(j.data_hora) > new Date(agora.getTime() + 60 * 60 * 1000) && j.status === 'agendado',
       })))
       setCarregando(false)
     }
