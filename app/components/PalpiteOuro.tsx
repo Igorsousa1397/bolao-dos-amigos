@@ -32,6 +32,9 @@ export default function PalpiteOuro({ userId, pagou }: { userId: string; pagou: 
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState('')
   const [expandido, setExpandido] = useState(false)
+  const [aba, setAba] = useState<'meu' | 'todos'>('meu')
+  const [todos, setTodos] = useState<any[]>([])
+  const [loadingTodos, setLoadingTodos] = useState(false)
 
   useEffect(() => {
     async function load() {
@@ -52,6 +55,26 @@ export default function PalpiteOuro({ userId, pagou }: { userId: string; pagou: 
     }
     load()
   }, [userId])
+
+  async function loadTodos() {
+    if (todos.length > 0) return
+    setLoadingTodos(true)
+    const { data: meuProfile } = await supabase
+      .from('profiles').select('bolao_id').eq('id', userId).single()
+    if (!meuProfile?.bolao_id) { setLoadingTodos(false); return }
+    const { data } = await supabase
+      .from('palpite_ouro')
+      .select('user_id, gols_casa, gols_fora, pontos, apurado, profiles(nome), time_casa:time_casa_id(nome,codigo), time_fora:time_fora_id(nome,codigo)')
+      .eq('bolao_id', meuProfile.bolao_id)
+    setTodos((data || []).map((p: any) => ({
+      user_id: p.user_id,
+      nome: p.profiles?.nome || 'Usuário',
+      casa: p.time_casa, fora: p.time_fora,
+      gols_casa: p.gols_casa, gols_fora: p.gols_fora,
+      pontos: p.pontos, apurado: p.apurado,
+    })))
+    setLoadingTodos(false)
+  }
 
   async function salvar() {
     if (!timeCasa || !timeFora || golsCasa === '' || golsFora === '') {
@@ -108,7 +131,52 @@ export default function PalpiteOuro({ userId, pagou }: { userId: string; pagou: 
           <div className="px-4 pb-4">
             <div className="h-px bg-yellow-200 mb-4" />
 
-            {palpiteExistente ? (
+            {/* Abas Meu / Todos */}
+            <div className="flex mb-4 bg-yellow-100/60 rounded-xl p-1 gap-1">
+              <button onClick={() => setAba('meu')}
+                className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${
+                  aba === 'meu' ? 'bg-white text-yellow-900 shadow-sm' : 'text-yellow-700/60'
+                }`}>
+                Meu palpite
+              </button>
+              <button onClick={() => { setAba('todos'); loadTodos() }}
+                className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${
+                  aba === 'todos' ? 'bg-white text-yellow-900 shadow-sm' : 'text-yellow-700/60'
+                }`}>
+                Todos
+              </button>
+            </div>
+
+            {aba === 'todos' ? (
+              loadingTodos ? (
+                <p className="text-center text-yellow-700/60 text-xs py-3">Carregando...</p>
+              ) : todos.length === 0 ? (
+                <p className="text-center text-yellow-700/60 text-xs py-3">Nenhum palpite de ouro registrado</p>
+              ) : (
+                <div className="flex flex-col gap-1.5">
+                  {todos
+                    .sort((a, b) => (b.pontos ?? -1) - (a.pontos ?? -1))
+                    .map(p => (
+                      <div key={p.user_id}
+                        className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-xs ${
+                          p.user_id === userId ? 'bg-yellow-100 border border-yellow-200' : 'bg-white/70'
+                        }`}>
+                        <span className={`font-medium ${p.user_id === userId ? 'text-yellow-900' : 'text-gray-700'}`}>
+                          {p.nome} {p.user_id === userId ? '(você)' : ''}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm">{BANDEIRAS[p.casa?.codigo] || '🏳️'}</span>
+                          <span className="font-bold text-gray-700">{p.gols_casa} × {p.gols_fora}</span>
+                          <span className="text-sm">{BANDEIRAS[p.fora?.codigo] || '🏳️'}</span>
+                          {p.apurado && p.pontos != null && (
+                            <span className={`font-bold px-2 py-0.5 rounded-lg ${p.pontos > 0 ? 'bg-yellow-200 text-yellow-800' : 'bg-gray-100 text-gray-500'}`}>+{p.pontos}</span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              )
+            ) : palpiteExistente ? (
               <div className="text-center">
                 <p className="text-yellow-700/70 text-xs mb-3">Seu palpite para a final</p>
                 <div className="flex items-center justify-center gap-4">
