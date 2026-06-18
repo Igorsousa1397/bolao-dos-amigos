@@ -35,6 +35,7 @@ export default function PalpiteOuro({ userId, pagou }: { userId: string; pagou: 
   const [aba, setAba] = useState<'meu' | 'todos'>('meu')
   const [todos, setTodos] = useState<any[]>([])
   const [loadingTodos, setLoadingTodos] = useState(false)
+  const [editando, setEditando] = useState(false)
 
   useEffect(() => {
     async function load() {
@@ -82,16 +83,30 @@ export default function PalpiteOuro({ userId, pagou }: { userId: string; pagou: 
     }
     if (timeCasa === timeFora) { setErro('Escolha times diferentes'); return }
     setSalvando(true); setErro('')
-    const { error } = await supabase.from('palpite_ouro').insert({
-      user_id: userId, time_casa_id: timeCasa, time_fora_id: timeFora,
-      gols_casa: Number(golsCasa), gols_fora: Number(golsFora),
-    })
+    let error
+    if (palpiteExistente) {
+      // edição: atualiza o palpite existente
+      const res = await supabase.from('palpite_ouro')
+        .update({
+          time_casa_id: timeCasa, time_fora_id: timeFora,
+          gols_casa: Number(golsCasa), gols_fora: Number(golsFora),
+        })
+        .eq('user_id', userId)
+      error = res.error
+    } else {
+      const res = await supabase.from('palpite_ouro').insert({
+        user_id: userId, time_casa_id: timeCasa, time_fora_id: timeFora,
+        gols_casa: Number(golsCasa), gols_fora: Number(golsFora),
+      })
+      error = res.error
+    }
     if (error) { setErro('Erro ao salvar.'); setSalvando(false); return }
     const { data: existente } = await supabase
       .from('palpite_ouro')
       .select('*, time_casa:time_casa_id(nome,codigo), time_fora:time_fora_id(nome,codigo)')
       .eq('user_id', userId).maybeSingle()
     setPalpiteExistente(existente)
+    setEditando(false)
     setSalvando(false)
   }
 
@@ -176,7 +191,7 @@ export default function PalpiteOuro({ userId, pagou }: { userId: string; pagou: 
                     ))}
                 </div>
               )
-            ) : palpiteExistente ? (
+            ) : (palpiteExistente && !editando) ? (
               <div className="text-center">
                 <p className="text-yellow-700/70 text-xs mb-3">Seu palpite para a final</p>
                 <div className="flex items-center justify-center gap-4">
@@ -203,17 +218,30 @@ export default function PalpiteOuro({ userId, pagou }: { userId: string; pagou: 
                     <p className="text-yellow-700 font-bold text-lg">+{palpiteExistente.pontos} pts</p>
                   </div>
                 )}
+                {!prazoEncerrado && !palpiteExistente.apurado && (
+                  <button
+                    onClick={() => {
+                      setTimeCasa(palpiteExistente.time_casa_id)
+                      setTimeFora(palpiteExistente.time_fora_id)
+                      setGolsCasa(String(palpiteExistente.gols_casa))
+                      setGolsFora(String(palpiteExistente.gols_fora))
+                      setEditando(true)
+                    }}
+                    className="mt-4 text-xs font-semibold text-yellow-800 border border-yellow-300 rounded-xl px-4 py-2 active:scale-95 transition-transform">
+                    Editar palpite
+                  </button>
+                )}
               </div>
             ) : prazoEncerrado ? (
               <div className="text-center py-3">
                 <Lock size={24} className="text-yellow-400/50 mx-auto mb-2" />
                 <p className="text-yellow-800/60 text-sm font-medium">Prazo encerrado</p>
-                <p className="text-yellow-700/40 text-xs mt-1">Devia ser feito antes do 1º jogo</p>
+                <p className="text-yellow-700/40 text-xs mt-1">O prazo para o Palpite de Ouro acabou</p>
               </div>
             ) : (
               <div>
                 <p className="text-yellow-700/70 text-xs mb-4 text-center">
-                  Escolha os finalistas e o placar. Vale antes do 1º jogo!
+                  Escolha os finalistas e o placar. Vale até 18/06 às 12h!
                 </p>
                 <div className="mb-3">
                   <label className="text-yellow-800/60 text-xs mb-1.5 block font-medium">Time 1 (mandante)</label>
