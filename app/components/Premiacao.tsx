@@ -14,6 +14,7 @@ type PremiacaoProps = {
   valorAzarao?: number
 }
 
+
 const PREMIACAO_PADRAO: LugarPremio[] = [
   { lugar: 1, pct: 60 },
   { lugar: 2, pct: 25 },
