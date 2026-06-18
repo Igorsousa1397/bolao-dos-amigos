@@ -146,7 +146,8 @@ export default function PalpiteOuro({ userId, pagou }: { userId: string; pagou: 
           <div className="px-4 pb-4">
             <div className="h-px bg-yellow-200 mb-4" />
 
-            {/* Abas Meu / Todos */}
+            {/* Abas Meu / Todos — "Todos" só aparece após o prazo (18/06 12h) */}
+            {prazoEncerrado && (
             <div className="flex mb-4 bg-yellow-100/60 rounded-xl p-1 gap-1">
               <button onClick={() => setAba('meu')}
                 className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${
@@ -161,8 +162,9 @@ export default function PalpiteOuro({ userId, pagou }: { userId: string; pagou: 
                 Todos
               </button>
             </div>
+            )}
 
-            {aba === 'todos' ? (
+            {(aba === 'todos' && prazoEncerrado) ? (
               loadingTodos ? (
                 <p className="text-center text-yellow-700/60 text-xs py-3">Carregando...</p>
               ) : todos.length === 0 ? (
