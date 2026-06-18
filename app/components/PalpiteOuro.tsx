@@ -49,9 +49,9 @@ export default function PalpiteOuro({ userId, pagou }: { userId: string; pagou: 
         .maybeSingle()
       setPalpiteExistente(existente)
 
-      const { data: jogosAtivos } = await supabase
-        .from('jogos').select('id').in('status', ['em_andamento', 'encerrado']).limit(1)
-      setPrazoEncerrado((jogosAtivos || []).length > 0)
+      // Prazo do Palpite de Ouro: até 18/06/2026 12h (Brasília) = 15:00 UTC
+      const PRAZO_OURO = new Date('2026-06-18T15:00:00Z')
+      setPrazoEncerrado(new Date() >= PRAZO_OURO)
     }
     load()
   }, [userId])
