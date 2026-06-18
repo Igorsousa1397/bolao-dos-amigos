@@ -100,7 +100,7 @@ function JogoCard({ jogo, userId, bolaoId, chavePix, pagou, onSalvo, habilitarEx
   const diff = dataJogo.getTime() - Date.now()
   const horas = Math.floor(diff / 1000 / 60 / 60)
   const minutos = Math.floor((diff / 1000 / 60) % 60)
-  const prazoPassou = diff <= 30 * 60 * 1000 || statusLive === 'encerrado' || statusLive === 'em_andamento'
+  const prazoPassou = diff <= 60 * 60 * 1000 || statusLive === 'encerrado' || statusLive === 'em_andamento'
   // Realtime
   useEffect(() => {
     const channel = supabase
@@ -446,7 +446,7 @@ export default function PalpitesPage() {
         time_fora: timesMap[j.time_fora_id],
         palpite: palpiteMap[j.id] || null,
         extras: extrasMap[j.id] || [],  // ← adiciona extras
-        palpite_aberto: new Date(j.data_hora) > new Date(agora.getTime() + 30 * 60 * 1000) && j.status === 'agendado',
+        palpite_aberto: new Date(j.data_hora) > new Date(agora.getTime() + 60 * 60 * 1000) && j.status === 'agendado',
       })))
       setCarregando(false)
     }
